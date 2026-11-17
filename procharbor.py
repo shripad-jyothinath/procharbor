@@ -384,6 +384,7 @@ class Sampler:
         self._disk_prev = {}
         self._net_if_prev = {}
         self._scan_count = 0
+        self._proc_samples = 0
         self._proc_list = []
         self._totals = {"processes": 0, "threads": 0, "handles": 0}
         self._system = {}
@@ -1021,6 +1022,7 @@ class Sampler:
             self._scan_net(now)
 
         self._prev_proc = prev_proc
+        self._proc_samples += 1
         if len(self._meta) > len(prev_proc) * 2:
             self._meta = {p: m for p, m in self._meta.items() if p in prev_proc}
 
@@ -1115,6 +1117,7 @@ class Sampler:
                 "started": self.start_ts,
                 "sys_ts": self._sys_ts,
                 "proc_ts": self._proc_ts,
+                "proc_samples": self._proc_samples,
                 "host": self._host,
                 "system": self._system,
                 "history": {
@@ -1557,6 +1560,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         self._icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
         self._icon_exact = {}
         self._icon_cache = {}
+        self._desktop_cache = {}
         prefixes = {}
         for base in (
             os.path.expanduser("~/.local/share/applications"),
@@ -1624,7 +1628,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
     def _icon_for_app(self, app, exe, cmdline):
         app = (app or "").strip().lower()
         exe_base = os.path.basename((exe or "").rstrip("/")).lower()
-        if "procharbor" in (cmdline or "").lower():
+        if "procharbor.py" in (cmdline or "").lower() and app.startswith("python"):
             return self._safe_icon(APP_ID, "utilities-system-monitor-symbolic")
         key = app or exe_base or "?"
         if key in self._icon_cache:
@@ -1673,6 +1677,57 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             icon = self._safe_icon("application-x-executable-symbolic")
         self._icon_cache[key] = icon
         return icon
+
+    def _has_desktop_match(self, app, exe, cmdline):
+        if "procharbor.py" in (cmdline or "").lower() and (app or "").lower().startswith("python"):
+            return True
+        app = (app or "").strip().lower()
+        exe_base = os.path.basename((exe or "").rstrip("/")).lower()
+        key = app or exe_base or "?"
+        if key in self._desktop_cache:
+            return self._desktop_cache[key]
+        candidates = [c.replace("_", "-") for c in (app, exe_base) if c]
+        result = False
+        for candidate in candidates:
+            if candidate in self._icon_exact:
+                result = True
+                break
+        if not result:
+            for token, _icon in self._icon_prefixes:
+                for candidate in candidates:
+                    if len(candidate) >= 4 and (candidate.startswith(token) or token.startswith(candidate)):
+                        result = True
+                        break
+                if result:
+                    break
+        self._desktop_cache[key] = result
+        return result
+
+    def _process_category(self, p, user_uids):
+        if p.get("uid") not in user_uids:
+            return "system"
+        name = (p.get("app") or "").lower().replace("_", "-")
+        if name.startswith("python") and "procharbor.py" in (p.get("cmdline") or "").lower():
+            return "app"
+        if name in (
+            "sh", "bash", "dash", "zsh", "fish", "ksh", "csh", "tcsh",
+            "tmux", "screen", "python", "python3", "python3.10", "python3.11",
+            "python3.12", "python3.13", "node", "npm", "npx", "perl", "ruby",
+            "php", "java",
+        ):
+            return "background"
+        if name.endswith((
+            "-daemon", "-service", "-server", "-agent", "-portal", "-registry",
+            "-factory", "-notify", "-helper", "-launcher", "-bus", "-extension",
+            "-engine", "-memconf", "-host",
+        )):
+            return "background"
+        exe = (p.get("exe") or "").lower()
+        if exe.startswith(("/usr/libexec/", "/usr/lib/systemd/", "/lib/systemd/")):
+            return "background"
+        if self._has_desktop_match(p["app"], p.get("exe"), p.get("cmdline")):
+            return "app"
+        return "background"
 
     def _icon_for_row(self, row):
         if not isinstance(row, dict):
@@ -1914,12 +1969,12 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
 
     def _cell_text(self, view, row, key):
         if view == "processes":
-            if row.get("_header") and key in ("disk", "net", "gpu"):
-                return ""
             if key == "name":
                 return row.get("name", "")
             if key == "status":
                 return row.get("status", "")
+            if row.get("_header"):
+                return ""
             if key == "cpu":
                 return fmt_pct(row.get("cpu"))
             if key == "mem":
@@ -2307,14 +2362,14 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
     def _build_groups(self, procs, user_uids):
         groups = {}
         for p in procs:
-            is_user = p.get("uid") in user_uids
-            key = (p["app"], is_user)
+            category = self._process_category(p, user_uids)
+            key = (p["app"], category)
             g = groups.get(key)
             if g is None:
                 g = {
                     "name": p["app"], "procs": [], "cpu": 0.0, "mem": 0,
                     "disk": 0.0, "net": 0.0, "gpu": 0.0, "_group": True,
-                    "category": "user" if is_user else "system",
+                    "category": category,
                 }
                 groups[key] = g
             g["procs"].append(p)
@@ -2366,7 +2421,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             self.proc_store.clear()
             user_uids = {u["uid"] for u in (self.snap.get("users") or [])} or {MY_UID}
             groups = self._sort_groups(self._build_groups(self._filtered_procs(), user_uids))
-            for label, cat in (("Apps", "user"), ("System", "system")):
+            for label, cat in (("Apps", "app"), ("Background", "background"), ("System", "system")):
                 section = [g for g in groups if g.get("category") == cat]
                 if not section:
                     continue
@@ -2375,9 +2430,6 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
                     "_header": True,
                     "name": label,
                     "status": f"{total} process{'es' if total != 1 else ''}",
-                    "cpu": sum(g.get("cpu") or 0 for g in section),
-                    "mem": sum(g.get("mem") or 0 for g in section),
-                    "disk": 0, "net": 0, "gpu": 0,
                 }
                 self.proc_store.append(None, [header])
                 for g in section:
@@ -3060,10 +3112,10 @@ class ProcHarborApp(Gtk.Application):
         if window:
             window.present()
             return
-        deadline = time.time() + 2.0
+        deadline = time.time() + 3.0
         while time.time() < deadline:
             snap = self.sampler.snapshot()
-            if snap.get("system") and snap.get("processes"):
+            if snap.get("system") and snap.get("processes") and snap.get("proc_samples", 0) >= 2:
                 break
             time.sleep(0.1)
         window = ProcHarborWindow(self, self.sampler)

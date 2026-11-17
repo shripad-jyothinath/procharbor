@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ProcHarbor — Native GTK4 Task Manager for Linux</title>
-<meta name="description" content="ProcHarbor is a native GTK4 task manager and system monitor for Linux. Apps and System processes, performance graphs, per-core clocks, startup, services and Debian packages.">
+<meta name="description" content="ProcHarbor is a native GTK4 task manager and system monitor for Linux. Apps, Background and System processes, performance graphs, per-core clocks, startup, services and Debian packages.">
 <meta name="color-scheme" content="dark">
 <meta property="og:title" content="ProcHarbor — Native GTK4 Task Manager for Linux">
 <meta property="og:description" content="A native GTK4 task manager and system monitor for Linux. No root daemon, no telemetry.">
@@ -123,8 +123,8 @@
     <h1>ProcHarbor</h1>
     <p class="tagline">A native GTK4 task manager and system monitor for Linux.</p>
     <p class="lede">
-      Apps and system processes, app icons, load-coloured CPU and memory, live
-      performance graphs, per-core clocks, Wi-Fi, GPU, startup and systemd
+      Apps, background and system processes, app icons, load-coloured CPU and
+      memory, live performance graphs, per-core clocks, Wi-Fi, GPU, startup and systemd
       services — straight from <code>/proc</code> and <code>/sys</code>.
       No root daemon, no telemetry, no network access.
     </p>
@@ -132,20 +132,20 @@
       <span class="badge">Debian packages</span>
       <span class="badge">x86_64 + arm64</span>
       <span class="badge">MIT license</span>
-      <span class="badge">v1.2.0</span>
+      <span class="badge">v1.3.0</span>
     </div>
     <div class="buttons">
-      <a class="btn btn-primary" href="https://github.com/shripad-jyothinath/procharbor/releases/download/v1.2.0/procharbor_1.2.0_amd64.deb">Download for x86_64</a>
-      <a class="btn btn-secondary" href="https://github.com/shripad-jyothinath/procharbor/releases/download/v1.2.0/procharbor_1.2.0_arm64.deb">Download for arm64</a>
+      <a class="btn btn-primary" href="https://github.com/shripad-jyothinath/procharbor/releases/download/v1.3.0/procharbor_1.3.0_amd64.deb">Download for x86_64</a>
+      <a class="btn btn-secondary" href="https://github.com/shripad-jyothinath/procharbor/releases/download/v1.3.0/procharbor_1.3.0_arm64.deb">Download for arm64</a>
       <a class="btn btn-ghost" href="https://github.com/shripad-jyothinath/procharbor">View on GitHub</a>
     </div>
-    <p class="meta">Debian package · <a href="https://github.com/shripad-jyothinath/procharbor/releases/tag/v1.2.0">Release notes</a> · Source available on GitHub</p>
+    <p class="meta">Debian package · <a href="https://github.com/shripad-jyothinath/procharbor/releases/tag/v1.3.0">Release notes</a> · Source available on GitHub</p>
   </div>
 </header>
 
 <main class="wrap">
   <div class="shot">
-    <img src="assets/screenshot.png" alt="ProcHarbor showing Apps and System process sections with load-coloured CPU and memory values" loading="lazy">
+    <img src="assets/screenshot.png" alt="ProcHarbor showing Apps, Background and System process sections with load-coloured CPU and memory values" loading="lazy">
   </div>
 
   <section>
@@ -153,8 +153,8 @@
     <p class="section-sub">Built for Linux, not a port. The interface follows the familiar task manager layout while reporting real kernel data.</p>
     <div class="grid">
       <article class="card">
-        <h3><span class="dot blue"></span>Apps and System</h3>
-        <p>Processes are separated into Apps owned by your session and System processes owned by root, service accounts and the kernel. Groups start collapsed; expand one to see its subprocesses.</p>
+        <h3><span class="dot blue"></span>Apps, Background and System</h3>
+        <p>Desktop applications, user background services and root/kernel processes are separated into three sections. Groups start collapsed; expand one to see its subprocesses.</p>
       </article>
       <article class="card">
         <h3><span class="dot amber"></span>Load-coloured values</h3>
@@ -185,10 +185,10 @@
     <div class="install">
       <div>
         <pre><code># Debian / Ubuntu — x86_64
-sudo apt install ./procharbor_1.2.0_amd64.deb
+sudo apt install ./procharbor_1.3.0_amd64.deb
 
 # arm64 / aarch64
-sudo apt install ./procharbor_1.2.0_arm64.deb
+sudo apt install ./procharbor_1.3.0_arm64.deb
 
 # Launch
 procharbor</code></pre>

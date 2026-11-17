@@ -5,7 +5,7 @@ umask 022
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 APP_ID=io.github.shripad-jyothinath.procharbor
 PKG=procharbor
-VERSION=1.2.0
+VERSION=1.3.0
 MAINTAINER="Shripad <shripad-jyothinath@users.noreply.github.com>"
 HOMEPAGE="https://github.com/shripad-jyothinath/procharbor"
 OUT="$HERE/dist"
