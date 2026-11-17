@@ -1,0 +1,5 @@
+dist/
+__pycache__/
+*.py[cod]
+*.deb
+.DS_Store
