@@ -15,8 +15,9 @@ systemd and DRM fdinfo directly. No root, no daemon, no network access.
 
 ## Features
 
-- **Processes** — grouped by executable, collapsible groups, sortable columns,
-  search, per-process CPU, memory, disk, network and GPU, End task.
+- **Processes** — grouped by executable with application icons, groups
+  collapsed by default, sortable columns, search, per-process CPU, memory,
+  disk, network and GPU, End task.
 - **Performance** — CPU (per-core clocks and charts, package temperature),
   Memory, Disk (volumes, NVMe temperature), Wi-Fi (signal, link rate, adapter,
   power save) and GPU, all with live charts.
@@ -39,10 +40,10 @@ Download the `.deb` for your architecture from
 
 ```sh
 # x86_64
-sudo apt install ./procharbor_1.0.0_amd64.deb
+sudo apt install ./procharbor_1.1.0_amd64.deb
 
 # arm64
-sudo apt install ./procharbor_1.0.0_arm64.deb
+sudo apt install ./procharbor_1.1.0_arm64.deb
 ```
 
 Launch **ProcHarbor** from the application menu, or run:
@@ -71,8 +72,8 @@ Install a menu entry and desktop shortcut for the source checkout:
 ./build-deb.sh
 ```
 
-This creates `dist/procharbor_1.0.0_amd64.deb`,
-`dist/procharbor_1.0.0_arm64.deb` and `dist/SHA256SUMS`. The packages contain
+This creates `dist/procharbor_1.1.0_amd64.deb`,
+`dist/procharbor_1.1.0_arm64.deb` and `dist/SHA256SUMS`. The packages contain
 the same pure-Python application and icons; the architecture-specific metadata
 is provided for each target.
 

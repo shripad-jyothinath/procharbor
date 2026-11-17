@@ -9,6 +9,7 @@ import glob
 import os
 import pwd
 import re
+import shlex
 import signal
 import socket
 import struct
@@ -1503,6 +1504,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         self.perf = "cpu"
 
         self._install_css()
+        self._build_icon_map()
         self._build_ui()
         self.snap = self.sampler.snapshot()
         self._update_summary()
@@ -1526,6 +1528,140 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         settings = Gtk.Settings.get_default()
         if settings:
             settings.set_property("gtk-application-prefer-dark-theme", self.theme == "dark")
+
+    def _build_icon_map(self):
+        self._icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+        self._icon_exact = {}
+        self._icon_cache = {}
+        prefixes = {}
+        for base in (
+            os.path.expanduser("~/.local/share/applications"),
+            "/usr/local/share/applications",
+            "/usr/share/applications",
+            "/var/lib/flatpak/exports/share/applications",
+            "/var/lib/snapd/desktop/applications",
+        ):
+            try:
+                names = sorted(os.listdir(base))
+            except OSError:
+                continue
+            for fn in names:
+                if not fn.endswith(".desktop"):
+                    continue
+                cfg = configparser.RawConfigParser(interpolation=None, strict=False)
+                try:
+                    with open(os.path.join(base, fn), "r", encoding="utf-8", errors="replace") as fh:
+                        cfg.read_file(fh)
+                except (OSError, configparser.Error):
+                    continue
+                if not cfg.has_section("Desktop Entry"):
+                    continue
+                d = cfg["Desktop Entry"]
+                if d.get("Type", "Application") != "Application":
+                    continue
+                icon = (d.get("Icon") or "").strip()
+                if not icon or icon.startswith("/") or not self._icon_theme.has_icon(icon):
+                    continue
+                tokens = {fn[:-8].lower().replace("_", "-")}
+                wm = (d.get("StartupWMClass") or "").strip().lower()
+                if wm:
+                    tokens.add(wm.replace("_", "-"))
+                exec_line = (d.get("Exec") or "").strip()
+                if exec_line:
+                    try:
+                        parts = shlex.split(exec_line)
+                    except ValueError:
+                        parts = exec_line.split()
+                    while parts and (os.path.basename(parts[0]) == "env" or "=" in parts[0]):
+                        parts.pop(0)
+                    if parts:
+                        exe = os.path.basename(parts[0]).lower()
+                        if exe:
+                            tokens.add(exe.replace("_", "-"))
+                        if exe == "flatpak":
+                            for part in parts[1:]:
+                                if not part.startswith("-"):
+                                    tokens.add(part.lower().replace("_", "-"))
+                                    break
+                for tok in tokens:
+                    if len(tok) < 3:
+                        continue
+                    self._icon_exact.setdefault(tok, icon)
+                    prefixes.setdefault(tok, icon)
+        self._icon_prefixes = sorted(prefixes.items(), key=lambda kv: -len(kv[0]))
+
+    def _safe_icon(self, name, fallback="application-x-executable-symbolic"):
+        if name and self._icon_theme.has_icon(name):
+            return name
+        if self._icon_theme.has_icon(fallback):
+            return fallback
+        return "application-x-executable"
+
+    def _icon_for_app(self, app, exe, cmdline):
+        app = (app or "").strip().lower()
+        exe_base = os.path.basename((exe or "").rstrip("/")).lower()
+        if "procharbor" in (cmdline or "").lower():
+            return self._safe_icon(APP_ID, "utilities-system-monitor-symbolic")
+        key = app or exe_base or "?"
+        if key in self._icon_cache:
+            return self._icon_cache[key]
+        candidates = [c.replace("_", "-") for c in (app, exe_base) if c]
+        for candidate in candidates:
+            if candidate in self._icon_exact:
+                icon = self._icon_exact[candidate]
+                self._icon_cache[key] = icon
+                return icon
+        best = None
+        for token, icon in self._icon_prefixes:
+            for candidate in candidates:
+                if len(candidate) < 4:
+                    continue
+                if candidate.startswith(token) or token.startswith(candidate):
+                    score = min(len(token), len(candidate))
+                    if best is None or score > best[0]:
+                        best = (score, icon)
+        if best:
+            self._icon_cache[key] = best[1]
+            return best[1]
+        if not exe_base or app.startswith((
+            "kworker", "ksoftirqd", "migration", "rcu", "irq/", "idle_inject",
+            "cpuhp", "kthreadd", "kprobe", "kcompactd", "kswapd", "kdevtmpfs",
+            "kauditd", "khungtaskd", "kintegrityd", "kblockd", "kthrotld",
+            "scsi_eh", "nvme-", "i915", "card0-", "watchdog",
+        )):
+            icon = self._safe_icon("applications-system-symbolic")
+        elif app.startswith("systemd") or app in (
+            "dbus-daemon", "dbus-broker", "polkitd", "rtkit-daemon", "accounts-daemon",
+            "avahi-daemon", "colord", "cupsd", "cups-browsed", "udisksd", "upowerd",
+            "wpa_supplicant", "networkmanager", "snapd", "packagekitd",
+        ):
+            icon = self._safe_icon("applications-system-symbolic")
+        elif app in (
+            "bash", "zsh", "fish", "sh", "dash", "tmux", "screen", "python",
+            "python3", "python3.10", "python3.11", "python3.12", "python3.13",
+            "node", "npm", "npx", "git", "cargo", "rustc", "make", "gcc",
+            "clang", "java", "perl", "ruby", "php",
+        ):
+            icon = self._safe_icon("utilities-terminal-symbolic")
+        elif app in ("gnome-shell", "gnome-software", "gnome-control-center"):
+            icon = self._safe_icon("utilities-system-monitor-symbolic")
+        else:
+            icon = self._safe_icon("application-x-executable-symbolic")
+        self._icon_cache[key] = icon
+        return icon
+
+    def _icon_for_row(self, row):
+        if not isinstance(row, dict):
+            return "application-x-executable-symbolic"
+        app = (row.get("name") if row.get("_group") else row.get("app")) or row.get("name") or ""
+        return self._icon_for_app(app, row.get("exe") or "", row.get("cmdline") or "")
+
+    def _icon_cell_func(self):
+        def func(col, cell, model, it, _data):
+            row = model.get_value(it, 0)
+            if isinstance(row, dict):
+                cell.set_property("icon-name", self._icon_for_row(row))
+        return func
 
     def _build_ui(self):
         header = Gtk.HeaderBar()
@@ -1659,6 +1795,17 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             col.set_alignment(align)
             if (expand_first and idx == 0) or (expand_last and idx == len(columns) - 1):
                 col.set_expand(True)
+            if view == "processes" and key == "name":
+                icon_renderer = Gtk.CellRendererPixbuf()
+                icon_renderer.set_property("icon-size", Gtk.IconSize.NORMAL)
+                icon_renderer.set_property("xalign", 0.5)
+                icon_renderer.set_property("yalign", 0.5)
+                icon_renderer.set_property("xpad", 0)
+                icon_renderer.set_property("ypad", 0)
+                icon_renderer.set_fixed_size(20, 18)
+                col.pack_start(icon_renderer, False)
+                col.set_cell_data_func(icon_renderer, self._icon_cell_func())
+                col.set_spacing(6)
             renderer = Gtk.CellRendererText()
             renderer.set_property("ypad", 0)
             renderer.set_fixed_size(-1, 26)
@@ -1778,7 +1925,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
     def _build_processes_view(self):
         self.proc_store = Gtk.TreeStore(object)
         cols = [
-            ("Name", "name", 250, 0.0),
+            ("Name", "name", 270, 0.0),
             ("Status", "status", 130, 0.0),
             ("CPU", "cpu", 80, 1.0),
             ("Memory", "mem", 110, 1.0),
@@ -2111,6 +2258,8 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             g["gpu"] = min(100.0, g["gpu"])
             g["top"] = max(g["procs"], key=lambda p: p.get("cpu") or 0)
             g["pid"] = g["top"]["pid"]
+            g["exe"] = g["top"].get("exe") or ""
+            g["cmdline"] = g["top"].get("cmdline") or ""
             g["status"] = (
                 f"{len(g['procs'])} processes" if len(g["procs"]) > 1 else g["top"]["status"]
             )
@@ -2122,9 +2271,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         name = g.get("name")
         if name in self.expanded_groups:
             return True
-        if name in self.collapsed_groups:
-            return False
-        return (g.get("cpu") or 0) >= 0.05 or (g.get("mem") or 0) >= 50 * 1024 * 1024
+        return False
 
     def _sort_groups(self, groups):
         key, direction = self.sort["processes"]
