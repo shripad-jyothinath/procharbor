@@ -81,7 +81,7 @@ THEMES = {
         "border": "#3a3a3a", "border_soft": "#313131", "text": "#ececec",
         "dim": "#a2a2a2", "faint": "#787878", "accent": "#4cc2ff",
         "accent_soft": "rgba(76,194,255,0.13)", "danger": "#ff7676",
-        "green": "#5ad48a", "amber": "#f7b955", "purple": "#a68bff",
+        "green": "#5ad48a", "amber": "#f7b955", "orange": "#ff9f43", "purple": "#a68bff",
         "sel": "#123a52", "hover": "#2b2b2b",
         "chart_grid": "#3a3a3a", "chart_text": "#787878",
     },
@@ -90,7 +90,7 @@ THEMES = {
         "border": "#d2d2d2", "border_soft": "#e3e3e3", "text": "#1b1b1b",
         "dim": "#5d5d5d", "faint": "#8a8a8a", "accent": "#0f7ac2",
         "accent_soft": "rgba(15,122,194,0.12)", "danger": "#c22f2f",
-        "green": "#1a8a4a", "amber": "#a86a00", "purple": "#6d4fd6",
+        "green": "#1a8a4a", "amber": "#a86a00", "orange": "#b45309", "purple": "#6d4fd6",
         "sel": "#cfe8fb", "hover": "#e8e8e8",
         "chart_grid": "#d2d2d2", "chart_text": "#8a8a8a",
     },
@@ -1209,7 +1209,30 @@ class Sampler:
                 "description": d.get("Comment", ""),
                 "source": os.path.join(base, fn),
             })
-        rows.sort(key=lambda r: r["name"].lower())
+        units = json_cmd(
+            ["systemctl", "--user", "list-unit-files", "--state=enabled", "--output=json", "--no-pager"], 6
+        ) or []
+        desc = {
+            u.get("unit", ""): u.get("description", "")
+            for u in (json_cmd(["systemctl", "--user", "list-units", "--all", "--output=json", "--no-pager"], 6) or [])
+            if isinstance(u, dict)
+        }
+        for u in units:
+            if not isinstance(u, dict):
+                continue
+            unit = u.get("unit_file", "")
+            if not unit.endswith(".service"):
+                continue
+            rows.append({
+                "name": unit,
+                "status": "Enabled",
+                "type": "Systemd (user)",
+                "scope": "user",
+                "command": "",
+                "description": desc.get(unit, ""),
+                "source": "",
+            })
+        rows.sort(key=lambda r: (r["type"] != "Autostart", r["name"].lower()))
         return rows
 
 
@@ -1489,11 +1512,12 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             "details": ("pid", 1),
             "apps": ("cpu_s", -1),
             "users": ("cpu", -1),
-            "startup": ("name", 1),
+            "startup": ("type", 1),
             "services": ("unit", 1),
         }
         self.columns = {k: {} for k in self.sort}
         self._rgba_cache = {}
+        self._total_mem = 0
         self._apps_stamp = None
         self._users_stamp = None
         self.perf_values = {}
@@ -1653,6 +1677,8 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
     def _icon_for_row(self, row):
         if not isinstance(row, dict):
             return "application-x-executable-symbolic"
+        if row.get("_header"):
+            return ""
         app = (row.get("name") if row.get("_group") else row.get("app")) or row.get("name") or ""
         return self._icon_for_app(app, row.get("exe") or "", row.get("cmdline") or "")
 
@@ -1660,7 +1686,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         def func(col, cell, model, it, _data):
             row = model.get_value(it, 0)
             if isinstance(row, dict):
-                cell.set_property("icon-name", self._icon_for_row(row))
+                cell.set_property("icon-name", self._icon_for_row(row) or "")
         return func
 
     def _build_ui(self):
@@ -1825,15 +1851,52 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
                 return
             cell.set_property("text", self._cell_text(view, row, key))
             cell.set_property("xalign", align)
-            cell.set_property("weight", Pango.Weight.BOLD if row.get("_group") else Pango.Weight.NORMAL)
+            is_header = bool(row.get("_header"))
+            cell.set_property(
+                "weight",
+                Pango.Weight.BOLD if (row.get("_group") or is_header) else Pango.Weight.NORMAL,
+            )
+            color = self.pal()["text"]
             if view == "services" and key == "status":
                 color = self._service_color_value(row)
             elif view == "startup" and key == "status":
                 color = self.pal()["text"] if row.get("status") == "Enabled" else self.pal()["faint"]
-            else:
-                color = self.pal()["text"]
+            elif view in ("processes", "details") and key in ("cpu", "mem"):
+                if key == "cpu":
+                    color = self._load_color(row.get("cpu") or 0, True)
+                else:
+                    pct = ((row.get("mem") or 0) / self._total_mem * 100) if self._total_mem else 0
+                    color = self._load_color(pct, False)
+            elif is_header and key == "name":
+                color = self.pal()["accent"]
+            elif is_header:
+                color = self.pal()["dim"]
             cell.set_property("foreground-rgba", self._rgba(color))
         return func
+
+    def _load_color(self, value, is_cpu):
+        pal = self.pal()
+        if is_cpu:
+            if value >= 50:
+                return pal["danger"]
+            if value >= 25:
+                return pal["orange"]
+            if value >= 5:
+                return pal["amber"]
+        else:
+            if value >= 15:
+                return pal["danger"]
+            if value >= 8:
+                return pal["orange"]
+            if value >= 2:
+                return pal["amber"]
+        return pal["text"]
+
+    def _mem_text(self, mem):
+        mem = mem or 0
+        if self._total_mem:
+            return f"{fmt_bytes(mem)} · {mem / self._total_mem * 100:.0f}%"
+        return fmt_bytes(mem)
 
     def _rgba(self, color):
         if color not in self._rgba_cache:
@@ -1851,6 +1914,8 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
 
     def _cell_text(self, view, row, key):
         if view == "processes":
+            if row.get("_header") and key in ("disk", "net", "gpu"):
+                return ""
             if key == "name":
                 return row.get("name", "")
             if key == "status":
@@ -1858,7 +1923,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             if key == "cpu":
                 return fmt_pct(row.get("cpu"))
             if key == "mem":
-                return fmt_bytes(row.get("mem"))
+                return self._mem_text(row.get("mem"))
             if key == "disk":
                 return fmt_rate(row.get("disk") if row.get("_group") else (row.get("disk_r", 0) + row.get("disk_w", 0)))
             if key == "net":
@@ -1871,7 +1936,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             if key == "cpu":
                 return fmt_pct(row.get("cpu"))
             if key == "mem":
-                return fmt_bytes(row.get("mem"))
+                return self._mem_text(row.get("mem"))
             if key == "disk":
                 return fmt_rate(row.get("disk_r", 0) + row.get("disk_w", 0))
             if key == "net":
@@ -1981,15 +2046,16 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
 
     def _build_startup_view(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        note = Gtk.Label(label="User-added apps from ~/.config/autostart.", xalign=0)
+        note = Gtk.Label(label="User autostart entries and enabled systemd user services.", xalign=0)
         note.add_css_class("summary")
         self.startup_note = note
         box.append(note)
         self.startup_store = Gtk.ListStore(object)
         cols = [
-            ("Name", "name", 320, 0.0),
-            ("Status", "status", 120, 0.0),
-            ("Command", "command", 500, 0.0),
+            ("Name", "name", 300, 0.0),
+            ("Status", "status", 100, 0.0),
+            ("Type", "type", 140, 0.0),
+            ("Command", "command", 420, 0.0),
         ]
         self.startup_tree = self._new_tree(self.startup_store, "startup", cols, expand_last=True)
         box.append(self._scrolled(self.startup_tree))
@@ -2207,7 +2273,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             it = store.get_iter_first()
             while it is not None and not found:
                 row = store.get_value(it, 0)
-                if isinstance(row, dict) and row.get("pid") == pid and not row.get("_group"):
+                if isinstance(row, dict) and row.get("pid") == pid and not row.get("_group") and not row.get("_header"):
                     selection.select_iter(it)
                     found = True
                     break
@@ -2238,16 +2304,19 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             or q in (p.get("cmdline") or "").lower()
         ]
 
-    def _build_groups(self, procs):
+    def _build_groups(self, procs, user_uids):
         groups = {}
         for p in procs:
-            g = groups.get(p["app"])
+            is_user = p.get("uid") in user_uids
+            key = (p["app"], is_user)
+            g = groups.get(key)
             if g is None:
                 g = {
                     "name": p["app"], "procs": [], "cpu": 0.0, "mem": 0,
                     "disk": 0.0, "net": 0.0, "gpu": 0.0, "_group": True,
+                    "category": "user" if is_user else "system",
                 }
-                groups[p["app"]] = g
+                groups[key] = g
             g["procs"].append(p)
             g["cpu"] += p.get("cpu") or 0
             g["mem"] += p.get("mem") or 0
@@ -2295,13 +2364,28 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         open_names = set()
         try:
             self.proc_store.clear()
-            groups = self._sort_groups(self._build_groups(self._filtered_procs()))
-            for g in groups:
-                parent = self.proc_store.append(None, [g])
-                if self._group_open(g):
-                    open_names.add(g["name"])
-                    for p in sorted(g["procs"], key=lambda x: -(x.get("cpu") or 0)):
-                        self.proc_store.append(parent, [p])
+            user_uids = {u["uid"] for u in (self.snap.get("users") or [])} or {MY_UID}
+            groups = self._sort_groups(self._build_groups(self._filtered_procs(), user_uids))
+            for label, cat in (("Apps", "user"), ("System", "system")):
+                section = [g for g in groups if g.get("category") == cat]
+                if not section:
+                    continue
+                total = sum(len(g["procs"]) for g in section)
+                header = {
+                    "_header": True,
+                    "name": label,
+                    "status": f"{total} process{'es' if total != 1 else ''}",
+                    "cpu": sum(g.get("cpu") or 0 for g in section),
+                    "mem": sum(g.get("mem") or 0 for g in section),
+                    "disk": 0, "net": 0, "gpu": 0,
+                }
+                self.proc_store.append(None, [header])
+                for g in section:
+                    parent = self.proc_store.append(None, [g])
+                    if self._group_open(g):
+                        open_names.add(g["name"])
+                        for p in sorted(g["procs"], key=lambda x: -(x.get("cpu") or 0)):
+                            self.proc_store.append(parent, [p])
             it = self.proc_store.get_iter_first()
             while it is not None:
                 row = self.proc_store.get_value(it, 0)
@@ -2412,6 +2496,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         system = self.snap.get("system") or {}
         if not system:
             return
+        self._total_mem = system["memory"]["total"]
         self.summary.set_markup(
             f"Processes <b>{totals.get('processes', 0)}</b>    "
             f"Threads <b>{totals.get('threads', 0)}</b>    "
