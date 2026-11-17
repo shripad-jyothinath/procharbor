@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProcHarbor — Native GTK4 Task Manager for Linux</title>
+<meta name="description" content="ProcHarbor is a native GTK4 task manager and system monitor for Linux. Apps and System processes, performance graphs, per-core clocks, startup, services and Debian packages.">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="ProcHarbor — Native GTK4 Task Manager for Linux">
+<meta property="og:description" content="A native GTK4 task manager and system monitor for Linux. No root daemon, no telemetry.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://shripad-jyothinath.github.io/procharbor/assets/screenshot.png">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #121417;
+    --bg-2: #171b20;
+    --panel: #1b2026;
+    --panel-2: #20272f;
+    --border: #2a323c;
+    --text: #edf3f9;
+    --dim: #a3b1bf;
+    --faint: #71808f;
+    --accent: #4cc2ff;
+    --green: #5ad48a;
+    --amber: #f7b955;
+    --danger: #ff7676;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1100px 520px at 50% -180px, rgba(76,194,255,.18), transparent 65%),
+      radial-gradient(800px 480px at 90% 10%, rgba(90,212,138,.06), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font: 16px/1.6 -apple-system, "Segoe UI", Ubuntu, Cantarell, "Noto Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .hero { padding: 84px 0 44px; text-align: center; }
+  .hero .logo { width: 92px; height: 92px; display: block; margin: 0 auto 26px; }
+  .eyebrow { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+  h1 { margin: 10px 0 8px; font-size: clamp(46px, 8vw, 78px); line-height: 1.02; letter-spacing: -.035em; }
+  .tagline { margin: 0 auto; max-width: 700px; font-size: clamp(18px, 2.4vw, 22px); color: var(--text); font-weight: 500; }
+  .lede { margin: 18px auto 0; max-width: 720px; color: var(--dim); font-size: 16px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 24px; }
+  .badge {
+    border: 1px solid var(--border); background: rgba(255,255,255,.03);
+    color: var(--dim); padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 32px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 20px; border-radius: 10px; font-weight: 650; font-size: 15px;
+    border: 1px solid transparent; transition: transform .12s ease, background .12s ease, border-color .12s ease;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn-primary { background: var(--accent); color: #06263b; }
+  .btn-primary:hover { background: #6fd0ff; }
+  .btn-secondary { background: var(--panel-2); color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { border-color: var(--faint); background: #26303a; }
+  .btn-ghost { background: transparent; color: var(--dim); border-color: var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--faint); }
+  .meta { margin-top: 16px; color: var(--faint); font-size: 13px; }
+  .shot { margin: 26px 0 76px; }
+  .shot img {
+    display: block; width: 100%; height: auto; border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03) inset;
+  }
+  section { padding: 18px 0 64px; }
+  h2 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 36px); letter-spacing: -.02em; }
+  .section-sub { margin: 0 0 30px; color: var(--dim); max-width: 760px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012)), var(--panel);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 22px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 17px; }
+  .card p { margin: 0; color: var(--dim); font-size: 14.5px; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+  .dot.blue { background: var(--accent); }
+  .dot.green { background: var(--green); }
+  .dot.amber { background: var(--amber); }
+  .dot.danger { background: var(--danger); }
+  .install { display: grid; grid-template-columns: 1.1fr .9fr; gap: 26px; align-items: start; }
+  pre {
+    margin: 0; padding: 22px; overflow: auto;
+    background: #0e1114; border: 1px solid var(--border); border-radius: var(--radius);
+    color: #cfe7f7; font: 13.5px/1.75 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .note { color: var(--faint); font-size: 13.5px; margin-top: 12px; }
+  .checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .checklist li { color: var(--dim); font-size: 14.5px; }
+  .checklist strong { color: var(--text); }
+  footer {
+    border-top: 1px solid var(--border); margin-top: 20px; padding: 30px 0 48px;
+    color: var(--faint); font-size: 13.5px;
+  }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 26px; align-items: center; justify-content: space-between; }
+  footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+    .install { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .hero { padding-top: 54px; }
+    .grid { grid-template-columns: 1fr; }
+    footer .wrap { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <img class="logo" src="assets/logo.svg" alt="ProcHarbor logo">
+    <div class="eyebrow">Linux · GTK4 · Open source</div>
+    <h1>ProcHarbor</h1>
+    <p class="tagline">A native GTK4 task manager and system monitor for Linux.</p>
+    <p class="lede">
+      Apps and system processes, app icons, load-coloured CPU and memory, live
+      performance graphs, per-core clocks, Wi-Fi, GPU, startup and systemd
+      services — straight from <code>/proc</code> and <code>/sys</code>.
+      No root daemon, no telemetry, no network access.
+    </p>
+    <div class="badges">
+      <span class="badge">Debian packages</span>
+      <span class="badge">x86_64 + arm64</span>
+      <span class="badge">MIT license</span>
+      <span class="badge">v1.2.0</span>
+    </div>
+    <div class="buttons">
+      <a class="btn btn-primary" href="https://github.com/shripad-jyothinath/procharbor/releases/download/v1.2.0/procharbor_1.2.0_amd64.deb">Download for x86_64</a>
+      <a class="btn btn-secondary" href="https://github.com/shripad-jyothinath/procharbor/releases/download/v1.2.0/procharbor_1.2.0_arm64.deb">Download for arm64</a>
+      <a class="btn btn-ghost" href="https://github.com/shripad-jyothinath/procharbor">View on GitHub</a>
+    </div>
+    <p class="meta">Debian package · <a href="https://github.com/shripad-jyothinath/procharbor/releases/tag/v1.2.0">Release notes</a> · Source available on GitHub</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="shot">
+    <img src="assets/screenshot.png" alt="ProcHarbor showing Apps and System process sections with load-coloured CPU and memory values" loading="lazy">
+  </div>
+
+  <section>
+    <h2>Everything you expect from a task manager</h2>
+    <p class="section-sub">Built for Linux, not a port. The interface follows the familiar task manager layout while reporting real kernel data.</p>
+    <div class="grid">
+      <article class="card">
+        <h3><span class="dot blue"></span>Apps and System</h3>
+        <p>Processes are separated into Apps owned by your session and System processes owned by root, service accounts and the kernel. Groups start collapsed; expand one to see its subprocesses.</p>
+      </article>
+      <article class="card">
+        <h3><span class="dot amber"></span>Load-coloured values</h3>
+        <p>CPU and memory numbers shift through amber, orange and red as load rises. Memory also shows its percentage of total RAM, so the colour has context.</p>
+      </article>
+      <article class="card">
+        <h3><span class="dot green"></span>App icons</h3>
+        <p>Processes are matched to their desktop entries and application icons, with sensible fallbacks for kernel threads, daemons and command-line tools.</p>
+      </article>
+      <article class="card">
+        <h3><span class="dot blue"></span>Performance</h3>
+        <p>Live CPU, memory, disk, Wi-Fi and GPU charts, per-core clocks and utilisation, package temperature and NVMe temperature.</p>
+      </article>
+      <article class="card">
+        <h3><span class="dot green"></span>Startup and services</h3>
+        <p>User autostart entries, enabled systemd user services and system services with their main PIDs. WARP's taskbar is shown as <code>warp-taskbar.service</code>.</p>
+      </article>
+      <article class="card">
+        <h3><span class="dot amber"></span>Native Linux data</h3>
+        <p>Per-process disk I/O, per-process network attribution, GPU engine time from DRM fdinfo, handles as file descriptors, and an app history table.</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Install</h2>
+    <p class="section-sub">Grab the package for your architecture and install it with apt. Dependencies on GTK4, PyGObject and pycairo are resolved automatically.</p>
+    <div class="install">
+      <div>
+        <pre><code># Debian / Ubuntu — x86_64
+sudo apt install ./procharbor_1.2.0_amd64.deb
+
+# arm64 / aarch64
+sudo apt install ./procharbor_1.2.0_arm64.deb
+
+# Launch
+procharbor</code></pre>
+        <p class="note">Or run from source with <code>./run.sh</code>. The app requires Python 3.8+, PyGObject, GTK4 and pycairo.</p>
+      </div>
+      <ul class="checklist">
+        <li><strong>No root daemon.</strong> The app runs as your user; the only privileged thing it does is ask before ending a process.</li>
+        <li><strong>No network.</strong> Everything is read from local kernel interfaces.</li>
+        <li><strong>No telemetry.</strong> No analytics, no accounts, no external calls.</li>
+        <li><strong>Reversible.</strong> Remove it with <code>sudo apt remove procharbor</code>.</li>
+        <li><strong>MIT licensed.</strong> Source and build scripts are on GitHub.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Requirements</h2>
+    <p class="section-sub">
+      Ubuntu 24.04 / Zorin 18 or any modern Debian-based desktop with GTK4.
+      The bundled Debian package depends on <code>python3-gi</code>,
+      <code>gir1.2-gtk-4.0</code>, <code>python3-gi-cairo</code>,
+      <code>python3-cairo</code> and <code>librsvg2-common</code>.
+      Wi-Fi link details use <code>iwconfig</code> when available; per-process
+      network attribution uses <code>ss</code>.
+    </p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>ProcHarbor · MIT licensed · Not affiliated with Microsoft.</span>
+    <nav>
+      <a href="https://github.com/shripad-jyothinath/procharbor">GitHub</a>
+      <a href="https://github.com/shripad-jyothinath/procharbor/releases">Releases</a>
+      <a href="https://github.com/shripad-jyothinath/procharbor/issues">Issues</a>
+      <a href="https://github.com/shripad-jyothinath/procharbor/blob/main/LICENSE">License</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

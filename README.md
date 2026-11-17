@@ -6,6 +6,12 @@
 
 <p align="center">A native GTK4 task manager and system monitor for Linux.</p>
 
+<p align="center">
+  <a href="https://shripad-jyothinath.github.io/procharbor/">Website</a> ·
+  <a href="https://github.com/shripad-jyothinath/procharbor/releases">Releases</a> ·
+  <a href="https://github.com/shripad-jyothinath/procharbor">Source</a>
+</p>
+
 ProcHarbor is an independent Linux desktop task manager built with GTK4 and
 Python. It covers the tabs people expect from a task manager — processes,
 performance, startup apps, users, details and services — using `/proc`, `/sys`,
