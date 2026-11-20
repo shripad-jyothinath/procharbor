@@ -40,6 +40,7 @@ PAGE_SIZE = os.sysconf("SC_PAGE_SIZE")
 MY_UID = os.getuid()
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP_ID = "io.github.shripad-jyothinath.procharbor"
+__version__ = "1.3.0"
 
 STATE_LABELS = {
     "R": "Running", "S": "Sleeping", "D": "Disk sleep", "I": "Idle",
@@ -413,17 +414,26 @@ class Sampler:
 
     def _find_gpu(self):
         for card in sorted(glob.glob("/sys/class/drm/card[0-9]*")):
-            if not os.path.exists(os.path.join(card, "gt/gt0")):
+            device_path = os.path.join(card, "device")
+            if not os.path.isdir(device_path):
                 continue
-            if read_text(os.path.join(card, "device/vendor")).strip() != "0x8086":
-                continue
-            pci = os.path.basename(os.path.realpath(os.path.join(card, "device")))
-            name = "Intel Graphics"
+            pci = os.path.basename(os.path.realpath(device_path))
+            name = None
             p = run(["lspci", "-mm", "-s", pci], 3)
             if p and p.returncode == 0:
                 fields = re.findall(r'"([^"]*)"', p.stdout)
                 if len(fields) >= 3 and fields[2]:
                     name = fields[2]
+            if not name:
+                vendor = read_text(os.path.join(device_path, "vendor")).strip().lower()
+                if vendor == "0x8086":
+                    name = "Intel Graphics"
+                elif vendor == "0x1002":
+                    name = "AMD Radeon Graphics"
+                elif vendor == "0x10de":
+                    name = "NVIDIA Graphics"
+                else:
+                    name = "GPU"
             return name, card
         return None, None
 
@@ -696,12 +706,26 @@ class Sampler:
         gpu = None
         if self.gpu_card:
             card = self.gpu_card
+            driver_link = os.path.join(card, "device/driver")
+            driver = os.path.basename(os.readlink(driver_link)) if os.path.islink(driver_link) else "drm"
+            freq = (
+                read_int(os.path.join(card, "gt/gt0/rps_cur_freq_mhz"))
+                or read_int(os.path.join(card, "gt_cur_freq_mhz"))
+            )
+            freq_act = (
+                read_int(os.path.join(card, "gt_act_freq_mhz"))
+                or read_int(os.path.join(card, "gt/gt0/rps_act_freq_mhz"))
+            )
+            freq_max = (
+                read_int(os.path.join(card, "gt_max_freq_mhz"))
+                or read_int(os.path.join(card, "gt/gt0/rps_max_freq_mhz"))
+            )
             gpu = {
                 "name": self.gpu_name, "util": self._gpu_total,
-                "freq": read_int(os.path.join(card, "gt/gt0/rps_cur_freq_mhz")),
-                "freq_act": read_int(os.path.join(card, "gt_act_freq_mhz")),
-                "freq_max": read_int(os.path.join(card, "gt_max_freq_mhz")),
-                "driver": "i915",
+                "freq": freq,
+                "freq_act": freq_act,
+                "freq_max": freq_max,
+                "driver": driver,
             }
 
         uptime = 0.0
@@ -763,7 +787,10 @@ class Sampler:
             if len(f) < 3:
                 continue
             dev, mount, fstype = f[0], f[1], f[2]
-            if fstype not in fstypes or dev in seen:
+            if fstype not in fstypes:
+                continue
+            mount = re.sub(r"\\([0-7]{3})", lambda m: chr(int(m.group(1), 8)), mount)
+            if dev in seen:
                 continue
             seen.add(dev)
             try:
@@ -781,7 +808,8 @@ class Sampler:
 
     def _proc_stat(self, pid: int):
         try:
-            raw = open(f"/proc/{pid}/stat", "rb").read()
+            with open(f"/proc/{pid}/stat", "rb") as fh:
+                raw = fh.read()
             lp = raw.rindex(b"(")
             rp = raw.rindex(b")")
             name = raw[lp + 1:rp].decode("utf-8", "replace")
@@ -1186,7 +1214,7 @@ class Sampler:
         try:
             names = sorted(os.listdir(base))
         except OSError:
-            return rows
+            names = []
         for fn in names:
             if not fn.endswith(".desktop"):
                 continue
@@ -1459,8 +1487,9 @@ class CompositionBar(Gtk.DrawingArea):
         total = max(1.0, used + cached + free)
         pal = self.palette()
         x = 0.0
-        for val, color in ((used, pal["accent"]), (cached, pal["purple"])):
-            seg = w * val / total
+        free_val = max(0.0, total - used - cached)
+        for val, color in ((used, pal["accent"]), (cached, pal["purple"]), (free_val, pal["border"])):
+            seg = max(0.0, w * val / total)
             cr.set_source_rgb(*hex_rgb(color))
             cr.rectangle(x, 0, seg, h)
             cr.fill()
@@ -1498,6 +1527,10 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         self.paused = False
         self.search_text = ""
         self.selected_pid = None
+        self.selected_row_type = None
+        self.selected_group_name = None
+        self.selected_category = None
+        self.selected_group_procs = []
         self._updating = False
         self._proc_stamp = None
         self._detail_stamp = None
@@ -1741,7 +1774,10 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         def func(col, cell, model, it, _data):
             row = model.get_value(it, 0)
             if isinstance(row, dict):
-                cell.set_property("icon-name", self._icon_for_row(row) or "")
+                is_header = bool(row.get("_header"))
+                cell.set_property("visible", not is_header)
+                if not is_header:
+                    cell.set_property("icon-name", self._icon_for_row(row) or "")
         return func
 
     def _build_ui(self):
@@ -1849,6 +1885,29 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         self.nav.select_row(self.nav_rows["processes"])
         self._update_status()
 
+        key_ctrl = Gtk.EventControllerKey()
+        key_ctrl.connect("key-pressed", self._on_key_pressed)
+        self.add_controller(key_ctrl)
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        if (state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_f, Gdk.KEY_F):
+            if self.current_tab == "performance":
+                self.nav.select_row(self.nav_rows["processes"])
+            self.search.grab_focus()
+            txt = self.search.get_text()
+            self.search.select_region(0, len(txt))
+            return True
+        if keyval == Gdk.KEY_Escape:
+            if self.search.has_focus():
+                if self.search.get_text():
+                    self.search.set_text("")
+                    return True
+                focus_target = getattr(self, f"{self.current_tab}_tree", None)
+                if focus_target:
+                    focus_target.grab_focus()
+                return True
+        return False
+
     def _scrolled(self, child):
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
@@ -1864,8 +1923,18 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         tree.set_reorderable(False)
         tree.set_grid_lines(Gtk.TreeViewGridLines.HORIZONTAL)
         tree.set_fixed_height_mode(True)
-        tree.get_selection().set_mode(Gtk.SelectionMode.SINGLE)
-        tree.get_selection().connect("changed", self._on_selection_changed, view)
+        sel = tree.get_selection()
+        sel.set_mode(Gtk.SelectionMode.SINGLE)
+        if view == "processes":
+            def can_select(selection, model, path, is_selected):
+                it = model.get_iter(path)
+                if it is not None:
+                    row = model.get_value(it, 0)
+                    if isinstance(row, dict) and row.get("_header"):
+                        return False
+                return True
+            sel.set_select_function(can_select)
+        sel.connect("changed", self._on_selection_changed, view)
         tree.connect("row-expanded", self._on_row_expanded)
         tree.connect("row-collapsed", self._on_row_collapsed)
         for idx, (title, key, width, align) in enumerate(columns):
@@ -2248,6 +2317,10 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         self.end_btn.set_visible(tab in ("processes", "details"))
         self.end_btn.set_sensitive(False)
         self.selected_pid = None
+        self.selected_row_type = None
+        self.selected_group_name = None
+        self.selected_category = None
+        self.selected_group_procs = []
         self.search.set_visible(tab != "performance")
         placeholders = {
             "processes": "Search processes…", "apps": "Search apps…",
@@ -2309,16 +2382,41 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         if self._updating:
             return
         model, it = selection.get_selected()
-        pid = None
-        if it is not None:
-            row = model.get_value(it, 0)
-            if isinstance(row, dict):
-                pid = row.get("pid")
-        self.selected_pid = pid
-        self.end_btn.set_sensitive(pid is not None and self.current_tab in ("processes", "details"))
+        if it is None:
+            self.selected_pid = None
+            self.selected_row_type = None
+            self.selected_group_name = None
+            self.selected_category = None
+            self.selected_group_procs = []
+            self.end_btn.set_sensitive(False)
+            return
+        row = model.get_value(it, 0)
+        if not isinstance(row, dict) or row.get("_header"):
+            self.selected_pid = None
+            self.selected_row_type = None
+            self.selected_group_name = None
+            self.selected_category = None
+            self.selected_group_procs = []
+            self.end_btn.set_sensitive(False)
+            return
+
+        if row.get("_group"):
+            self.selected_row_type = "group"
+            self.selected_group_name = row.get("name")
+            self.selected_category = row.get("category")
+            self.selected_pid = row.get("pid")
+            self.selected_group_procs = list(row.get("procs") or [])
+            self.end_btn.set_sensitive(self.current_tab in ("processes", "details"))
+        else:
+            self.selected_row_type = "process"
+            self.selected_pid = row.get("pid")
+            self.selected_group_name = None
+            self.selected_category = None
+            self.selected_group_procs = []
+            self.end_btn.set_sensitive(self.selected_pid is not None and self.current_tab in ("processes", "details"))
 
     def _select_pid(self, tree, store, pid):
-        if pid is None:
+        if pid is None and not self.selected_group_name:
             return
         self._updating = True
         found = False
@@ -2328,23 +2426,37 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             it = store.get_iter_first()
             while it is not None and not found:
                 row = store.get_value(it, 0)
-                if isinstance(row, dict) and row.get("pid") == pid and not row.get("_group") and not row.get("_header"):
-                    selection.select_iter(it)
-                    found = True
-                    break
+                if isinstance(row, dict) and not row.get("_header"):
+                    if self.selected_row_type == "group":
+                        if row.get("_group") and row.get("name") == self.selected_group_name and row.get("category") == self.selected_category:
+                            selection.select_iter(it)
+                            self.selected_group_procs = list(row.get("procs") or [])
+                            self.selected_pid = row.get("pid")
+                            found = True
+                            break
+                    else:
+                        if not row.get("_group") and row.get("pid") == pid:
+                            selection.select_iter(it)
+                            found = True
+                            break
                 child = store.iter_children(it)
-                while child is not None:
-                    row = store.get_value(child, 0)
-                    if isinstance(row, dict) and row.get("pid") == pid:
-                        selection.select_iter(child)
-                        found = True
-                        break
+                while child is not None and not found:
+                    crow = store.get_value(child, 0)
+                    if isinstance(crow, dict) and not crow.get("_group"):
+                        if self.selected_row_type != "group" and crow.get("pid") == pid:
+                            selection.select_iter(child)
+                            found = True
+                            break
                     child = store.iter_next(child)
                 it = store.iter_next(it)
         finally:
             self._updating = False
         if not found:
             self.selected_pid = None
+            self.selected_group_name = None
+            self.selected_category = None
+            self.selected_row_type = None
+            self.selected_group_procs = []
             self.end_btn.set_sensitive(False)
 
     def _filtered_procs(self):
@@ -2400,8 +2512,8 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
     def _sort_groups(self, groups):
         key, direction = self.sort["processes"]
         def value(g):
-            if key == "name":
-                return g["name"].lower()
+            if key in TEXT_KEYS or key in ("name", "status"):
+                return str(g.get(key) or "").lower()
             return g.get(key) or 0
         groups.sort(key=value, reverse=direction < 0)
         return groups
@@ -2464,14 +2576,8 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             rows = self._filtered_procs()
             key, direction = self.sort["details"]
             def value(p):
-                if key == "name":
-                    return p["name"].lower()
-                if key == "status":
-                    return p["status"]
-                if key == "user":
-                    return p["user"]
-                if key == "cmdline":
-                    return (p.get("cmdline") or "").lower()
+                if key in ("name", "status", "user", "cmdline") or key in TEXT_KEYS:
+                    return str(p.get(key) or "").lower()
                 if key == "disk":
                     return (p.get("disk_r") or 0) + (p.get("disk_w") or 0)
                 if key == "net":
@@ -2520,7 +2626,11 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         if q:
             rows = [r for r in rows if q in r["user"].lower()]
         key, direction = self.sort["users"]
-        rows = sorted(rows, key=lambda r: (r["user"].lower() if key == "user" else (r.get(key) or 0)), reverse=direction < 0)
+        def user_sort_val(r):
+            if key in TEXT_KEYS or key in ("user", "session", "state", "tty"):
+                return str(r.get(key) or "").lower()
+            return r.get(key) or 0
+        rows = sorted(rows, key=user_sort_val, reverse=direction < 0)
         for r in rows:
             self.users_store.append([r])
 
@@ -3033,11 +3143,11 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
                 or q in (r.get("description") or "").lower()
             ]
         key, direction = self.sort["startup"]
-        rows = sorted(
-            rows,
-            key=lambda r: (r.get("name", "").lower() if key == "name" else (r.get(key) or "")),
-            reverse=direction < 0,
-        )
+        def startup_sort_val(r):
+            if key == "command":
+                return (r.get("command") or r.get("description") or "").lower()
+            return str(r.get(key) or "").lower()
+        rows = sorted(rows, key=startup_sort_val, reverse=direction < 0)
         self.startup_store.clear()
         for r in rows:
             self.startup_store.append([r])
@@ -3049,6 +3159,22 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         return None
 
     def _on_end_task(self, button):
+        if self.selected_row_type == "group" and self.selected_group_name:
+            procs = self.selected_group_procs or []
+            name = self.selected_group_name
+            dialog = Gtk.AlertDialog()
+            if len(procs) > 1:
+                dialog.set_message(f'End "{name}" ({len(procs)} processes)?')
+                dialog.set_detail(f"All {len(procs)} processes will receive SIGTERM.")
+            else:
+                dialog.set_message(f'End "{name}"?')
+                dialog.set_detail(f"PID {self.selected_pid} will receive SIGTERM.")
+            dialog.set_buttons(["Cancel", "End task"])
+            dialog.set_cancel_button(0)
+            dialog.set_default_button(0)
+            dialog.choose(self, None, self._on_end_choice, (self.selected_pid, procs))
+            return
+
         pid = self.selected_pid
         if not pid:
             return
@@ -3060,30 +3186,39 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
         dialog.set_buttons(["Cancel", "End task"])
         dialog.set_cancel_button(0)
         dialog.set_default_button(0)
-        dialog.choose(self, None, self._on_end_choice, pid)
+        dialog.choose(self, None, self._on_end_choice, (pid, [proc] if proc else []))
 
-    def _on_end_choice(self, dialog, result, pid):
+    def _on_end_choice(self, dialog, result, target):
         try:
             choice = dialog.choose_finish(result)
         except GLib.Error:
             return
         if choice != 1:
             return
-        try:
-            st = os.stat(f"/proc/{pid}")
-        except OSError:
-            return
-        if st.st_uid != MY_UID and MY_UID != 0:
-            self._error_dialog("You can only end processes owned by your user.")
-            return
-        if pid <= 1:
-            return
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except OSError as exc:
-            self._error_dialog(f"Could not end PID {pid}: {exc.strerror}")
-            return
+        pid, procs = target
+        pids_to_kill = [p["pid"] for p in procs if p and p.get("pid")] if procs else ([pid] if pid else [])
+        errors = []
+        for p in pids_to_kill:
+            if p <= 1:
+                continue
+            try:
+                st = os.stat(f"/proc/{p}")
+            except OSError:
+                continue
+            if st.st_uid != MY_UID and MY_UID != 0:
+                errors.append(f"PID {p}: Not owned by your user")
+                continue
+            try:
+                os.kill(p, signal.SIGTERM)
+            except OSError as exc:
+                errors.append(f"PID {p}: {exc.strerror}")
+        if errors and len(errors) == len(pids_to_kill):
+            self._error_dialog("\n".join(errors[:5]))
         self.selected_pid = None
+        self.selected_group_name = None
+        self.selected_category = None
+        self.selected_row_type = None
+        self.selected_group_procs = []
         self.end_btn.set_sensitive(False)
         GLib.timeout_add(400, lambda: (self._refresh_processes(force=True), False)[1])
 
@@ -3123,6 +3258,9 @@ class ProcHarborApp(Gtk.Application):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] in ("-v", "--version"):
+        print(f"ProcHarbor {__version__}")
+        return 0
     if not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
         print("No graphical session detected (DISPLAY/WAYLAND_DISPLAY unset).", file=sys.stderr)
         return 1

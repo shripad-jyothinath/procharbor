@@ -44,7 +44,7 @@ StartupWMClass=$APP_ID"
 printf '%s\n' "$ENTRY" > "$APPS_DIR/$APP_ID.desktop"
 chmod 644 "$APPS_DIR/$APP_ID.desktop"
 
-if [ -n "${DESKTOP_DIR:-}" ] && [ -d "$DESKTOP_DIR" ]; then
+if [ -n "${DESKTOP_DIR:-}" ] && [ -d "$DESKTOP_DIR" ] && [ "$DESKTOP_DIR" != "$HOME" ]; then
     printf '%s\n' "$ENTRY" > "$DESKTOP_DIR/ProcHarbor.desktop"
     chmod +x "$DESKTOP_DIR/ProcHarbor.desktop"
     gio set "$DESKTOP_DIR/ProcHarbor.desktop" metadata::trusted true 2>/dev/null || true
