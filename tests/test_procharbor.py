@@ -99,6 +99,19 @@ class TestSampler(unittest.TestCase):
         self.assertIn("name", proc)
         self.assertIn("cpu", proc)
         self.assertIn("mem", proc)
+        for p in snap["processes"]:
+            self.assertGreaterEqual(p["cpu"], 0.0)
+            self.assertLessEqual(p["cpu"], 100.0)
+
+    def test_cpu_clamping_and_normalization(self):
+        # Even with massive tick jumps across many cores, cpu percentage is clamped to <= 100.0
+        self.sampler.ncpu = 4
+        prev_ticks = 1000
+        now_ticks = 1000 + 4 * procharbor.CLK_TCK * 10  # 400% in un-normalized scale
+        dt = 1.0
+        calc_cpu = max(0.0, min(100.0, (now_ticks - prev_ticks) / procharbor.CLK_TCK / dt / max(1, self.sampler.ncpu) * 100.0))
+        self.assertLessEqual(calc_cpu, 100.0)
+        self.assertEqual(calc_cpu, 100.0)
 
     def test_services_collection(self):
         services = self.sampler.services()

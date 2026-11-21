@@ -1001,7 +1001,7 @@ class Sampler:
             cpu = dr = dw = 0.0
             if old and old["starttime"] == st["starttime"]:
                 if dt > 0:
-                    cpu = max(0.0, (ticks - old["ticks"]) / CLK_TCK / dt * 100.0)
+                    cpu = max(0.0, min(100.0, (ticks - old["ticks"]) / CLK_TCK / dt / max(1, self.ncpu) * 100.0))
                     dr = max(0, rd - old["rd"]) / dt
                     dw = max(0, wr - old["wr"]) / dt
                 app = meta["app"] or st["name"]
@@ -1073,7 +1073,7 @@ class Sampler:
         for app, tot in self._app_totals.items():
             c = cur.get(app, {})
             rows.append({
-                "name": app, "cpu": round(c.get("cpu", 0.0), 1), "mem": c.get("mem", 0),
+                "name": app, "cpu": min(100.0, round(c.get("cpu", 0.0), 1)), "mem": c.get("mem", 0),
                 "gpu": min(100.0, round(c.get("gpu", 0.0), 1)), "procs": c.get("procs", 0),
                 "disk_r": c.get("disk_r", 0), "disk_w": c.get("disk_w", 0),
                 "up": c.get("up", 0), "down": c.get("down", 0),
@@ -1131,7 +1131,7 @@ class Sampler:
         allowed = {s["uid"] for s in sessions} | {MY_UID}
         rows = [u for uid, u in by_uid.items() if uid in allowed]
         for r in rows:
-            r["cpu"] = round(r["cpu"], 1)
+            r["cpu"] = min(100.0, round(r["cpu"], 1))
             r.setdefault("session", "—")
             r.setdefault("tty", "—")
             r.setdefault("state", "—")
@@ -2491,6 +2491,7 @@ class ProcHarborWindow(Gtk.ApplicationWindow):
             g["net"] += (p.get("net_up") or 0) + (p.get("net_down") or 0)
             g["gpu"] += p.get("gpu") or 0
         for g in groups.values():
+            g["cpu"] = min(100.0, round(g["cpu"], 1))
             g["gpu"] = min(100.0, g["gpu"])
             g["top"] = max(g["procs"], key=lambda p: p.get("cpu") or 0)
             g["pid"] = g["top"]["pid"]
