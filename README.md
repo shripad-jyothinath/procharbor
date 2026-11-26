@@ -41,7 +41,31 @@ Python runtime overhead.
 
 ## Install
 
-### Debian package
+### Via APT Repository (Recommended)
+
+Install and receive automatic updates through `apt`:
+
+```sh
+curl -fsSL https://shripad-jyothinath.github.io/procharbor/install-repo.sh | sudo bash
+sudo apt install procharbor
+```
+
+Or configure manually with verified GPG signature:
+
+```sh
+# Add repository signing key
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://shripad-jyothinath.github.io/procharbor/procharbor-archive-keyring.gpg | sudo tee /etc/apt/keyrings/procharbor.gpg > /dev/null
+
+# Add repository source
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/procharbor.gpg] https://shripad-jyothinath.github.io/procharbor/debian stable main" | sudo tee /etc/apt/sources.list.d/procharbor.list
+
+# Update and install
+sudo apt update
+sudo apt install procharbor
+```
+
+### Direct Debian package
 
 Download the `.deb` for your architecture from
 [Releases](https://github.com/shripad-jyothinath/procharbor/releases):

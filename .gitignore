@@ -3,4 +3,5 @@ dist/
 __pycache__/
 *.py[cod]
 *.deb
+!docs/debian/**/*.deb
 .DS_Store

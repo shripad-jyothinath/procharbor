@@ -1,0 +1,46 @@
+name: Update APT Repository
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-publish-apt:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install APT packaging tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev apt-utils gpg
+
+      - name: Import GPG private key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+
+      - name: Build Debian Package
+        run: ./build-deb.sh
+
+      - name: Build and Sign APT Repository
+        run: ./build-apt-repo.sh
+
+      - name: Commit and Push APT repository updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          if git diff --staged --quiet; then
+            echo "No changes to APT repository."
+          else
+            git commit -m "chore(apt): update APT repository"
+            git push origin main
+          fi

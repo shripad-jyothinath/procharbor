@@ -181,25 +181,23 @@
 
   <section>
     <h2>Install</h2>
-    <p class="section-sub">Grab the standalone package for your architecture and install it with apt. Standalone native binary with zero runtime dependencies.</p>
+    <p class="section-sub">Install via the official APT repository for automatic updates, or download standalone Debian packages directly.</p>
     <div class="install">
       <div>
-        <pre><code># Debian / Ubuntu — x86_64
-sudo apt install ./procharbor_1.3.0_amd64.deb
+        <pre><code># Install via official APT repository
+curl -fsSL https://shripad-jyothinath.github.io/procharbor/install-repo.sh | sudo bash
+sudo apt install procharbor
 
-# arm64 / aarch64
-sudo apt install ./procharbor_1.3.0_arm64.deb
-
-# Launch
-procharbor</code></pre>
-        <p class="note">Or run from source with <code>./run.sh</code> or <code>cargo run --release</code>.</p>
+# Or direct download
+sudo apt install ./procharbor_1.3.0_amd64.deb</code></pre>
+        <p class="note">Or build from source with <code>cargo run --release</code>.</p>
       </div>
       <ul class="checklist">
-        <li><strong>No root daemon.</strong> The app runs as your user; the only privileged thing it does is ask before ending a process.</li>
-        <li><strong>No network.</strong> Everything is read from local kernel interfaces.</li>
-        <li><strong>No telemetry.</strong> No analytics, no accounts, no external calls.</li>
-        <li><strong>Reversible.</strong> Remove it with <code>sudo apt remove procharbor</code>.</li>
-        <li><strong>MIT licensed.</strong> Source and build scripts are on GitHub.</li>
+        <li><strong>Automatic updates.</strong> Upgraded automatically with standard <code>sudo apt update && sudo apt upgrade</code>.</li>
+        <li><strong>Cryptographically signed.</strong> GPG-signed archive keyring with verified SHA-256 package checksums.</li>
+        <li><strong>No root daemon.</strong> The app runs as your user; no persistent background services or root daemons.</li>
+        <li><strong>No telemetry & no network.</strong> Zero analytics, no accounts, and all system monitoring is 100% local.</li>
+        <li><strong>Reversible.</strong> Remove anytime with <code>sudo apt remove procharbor</code>.</li>
       </ul>
     </div>
   </section>
