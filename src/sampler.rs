@@ -101,6 +101,16 @@ pub struct MemoryInfo {
     pub swap_free: u64,
     pub swap_used: u64,
     pub percent: f64,
+    // Hardware details (Windows Task Manager parity)
+    pub speed_mts: Option<u64>,
+    pub mem_type: Option<String>,
+    pub manufacturer: Option<String>,
+    pub form_factor: Option<String>,
+    pub slots_used: usize,
+    pub slots_total: usize,
+    pub hw_reserved: u64,
+    pub installed: u64,
+    pub max_capacity: Option<u64>,
 }
 
 #[allow(dead_code)]
@@ -499,6 +509,7 @@ pub struct Sampler {
     boot_time: f64,
     gpu_name: Option<String>,
     gpu_card: Option<String>,
+    mem_hw: MemoryHardware,
     clk_tck: f64,
     page_size: u64,
     stop: Arc<AtomicBool>,
@@ -521,6 +532,7 @@ impl Sampler {
         let cpu_flags = read_cpu_flags();
         let boot_time = read_boot_time();
         let (gpu_name, gpu_card) = find_gpu();
+        let mem_hw = read_memory_hardware();
 
         let mut sys_int = SamplerInternals::default();
         refresh_hwmon(&mut sys_int.hwmon);
@@ -535,6 +547,7 @@ impl Sampler {
             boot_time,
             gpu_name,
             gpu_card,
+            mem_hw,
             clk_tck: clk_tck(),
             page_size: page_size(),
             stop: Arc::new(AtomicBool::new(false)),
@@ -677,7 +690,7 @@ impl Sampler {
             .map(|v| v as f64 / 1000.0)
             .unwrap_or(0.0);
 
-        let memory = read_memory_info();
+        let memory = read_memory_info(&self.mem_hw);
 
         let dt = int.disk_ts.map(|ts| (now - ts).max(1e-3)).unwrap_or(1.0);
         let mut disk_rows = Vec::new();
@@ -2393,7 +2406,300 @@ fn read_cpu_times() -> HashMap<String, (u64, u64)> {
     data
 }
 
-fn read_memory_info() -> MemoryInfo {
+#[derive(Clone, Default, Debug)]
+pub struct MemoryHardware {
+    pub mem_type: Option<String>,
+    pub speed_mts: Option<u64>,
+    pub manufacturer: Option<String>,
+    pub form_factor: Option<String>,
+    pub slots_used: usize,
+    pub slots_total: usize,
+    pub installed_bytes: u64,
+    pub max_capacity: Option<u64>,
+}
+
+pub fn parse_udev_memory(text: &str) -> Option<MemoryHardware> {
+    let mut hw = MemoryHardware::default();
+    let mut seen_indices: HashSet<usize> = HashSet::new();
+
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("E:MEMORY_ARRAY_MAX_CAPACITY=") {
+            if let Ok(cap) = rest.parse::<u64>() {
+                if cap > 0 {
+                    hw.max_capacity = Some(cap);
+                }
+            }
+        } else if let Some(rest) = trimmed.strip_prefix("E:MEMORY_DEVICE_") {
+            let Some((idx_str, key_val)) = rest.split_once('_') else {
+                continue;
+            };
+            let Ok(idx) = idx_str.parse::<usize>() else {
+                continue;
+            };
+            seen_indices.insert(idx);
+            let Some((key, val)) = key_val.split_once('=') else {
+                continue;
+            };
+            let val = val.trim();
+            match key {
+                "SIZE" => {
+                    if let Ok(bytes) = val.parse::<u64>() {
+                        if bytes > 0 {
+                            hw.slots_used += 1;
+                            hw.installed_bytes = hw.installed_bytes.saturating_add(bytes);
+                        }
+                    }
+                }
+                "TYPE" => {
+                    if !val.is_empty()
+                        && !val.eq_ignore_ascii_case("unknown")
+                        && !val.eq_ignore_ascii_case("other")
+                        && hw.mem_type.is_none()
+                    {
+                        hw.mem_type = Some(val.to_string());
+                    }
+                }
+                "SPEED_MTS" | "CONFIGURED_SPEED_MTS" => {
+                    if let Ok(spd) = val.parse::<u64>() {
+                        if spd > 0 && hw.speed_mts.is_none() {
+                            hw.speed_mts = Some(spd);
+                        }
+                    }
+                }
+                "MANUFACTURER" => {
+                    if !val.is_empty()
+                        && !val.eq_ignore_ascii_case("unknown")
+                        && !val.eq_ignore_ascii_case("not specified")
+                        && !val.eq_ignore_ascii_case("no dimm")
+                        && hw.manufacturer.is_none()
+                    {
+                        hw.manufacturer = Some(val.to_string());
+                    }
+                }
+                "FORM_FACTOR" => {
+                    if !val.is_empty()
+                        && !val.eq_ignore_ascii_case("unknown")
+                        && hw.form_factor.is_none()
+                    {
+                        hw.form_factor = Some(val.to_string());
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    if !seen_indices.is_empty() || hw.installed_bytes > 0 {
+        hw.slots_total = seen_indices.len().max(hw.slots_used);
+        Some(hw)
+    } else {
+        None
+    }
+}
+
+pub fn read_edac_memory() -> Option<MemoryHardware> {
+    let mut hw = MemoryHardware::default();
+    let mut total_slots = 0;
+    let mut used_slots = 0;
+    let mut installed = 0u64;
+    let mut detected_type = None;
+
+    if let Ok(mc_entries) = fs::read_dir("/sys/devices/system/edac/mc") {
+        for mc_ent in mc_entries.flatten() {
+            let mc_path = mc_ent.path();
+            if !mc_path.is_dir() {
+                continue;
+            }
+            if let Ok(dimm_entries) = fs::read_dir(&mc_path) {
+                for dimm_ent in dimm_entries.flatten() {
+                    let dpath = dimm_ent.path();
+                    let name = dimm_ent.file_name().to_string_lossy().to_string();
+                    if !name.starts_with("dimm") {
+                        continue;
+                    }
+                    total_slots += 1;
+                    if let Ok(size_str) = fs::read_to_string(dpath.join("size")) {
+                        if let Ok(mb) = size_str.trim().parse::<u64>() {
+                            if mb > 0 {
+                                used_slots += 1;
+                                installed = installed.saturating_add(mb.saturating_mul(1024 * 1024));
+                            }
+                        }
+                    }
+                    if detected_type.is_none() {
+                        if let Ok(t_str) = fs::read_to_string(dpath.join("dimm_mem_type")) {
+                            let t = t_str.trim();
+                            if !t.is_empty() && !t.eq_ignore_ascii_case("unknown") {
+                                let normalized = match t {
+                                    "Low-Power-DDR3-RAM" | "Low-Power-DDR3" => "LPDDR3",
+                                    "Low-Power-DDR4-RAM" | "Low-Power-DDR4" => "LPDDR4",
+                                    "Low-Power-DDR5-RAM" | "Low-Power-DDR5" => "LPDDR5",
+                                    "Low-Power-DDR" => "LPDDR",
+                                    "DDR5-RAM" => "DDR5",
+                                    "DDR4-RAM" => "DDR4",
+                                    "DDR3-RAM" => "DDR3",
+                                    other => other,
+                                };
+                                detected_type = Some(normalized.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if total_slots > 0 || installed > 0 {
+        if let Ok(entries) = fs::read_dir("/sys/firmware/dmi/entries") {
+            let dmi_17_count = entries
+                .flatten()
+                .filter(|e| e.file_name().to_string_lossy().starts_with("17-"))
+                .count();
+            if dmi_17_count > 0 {
+                total_slots = dmi_17_count;
+            }
+        }
+        hw.slots_used = used_slots;
+        hw.slots_total = total_slots.max(used_slots);
+        hw.installed_bytes = installed;
+        if let Some(ref t) = detected_type {
+            if t.starts_with("LPDDR") {
+                hw.form_factor = Some("Row of chips".to_string());
+            } else {
+                hw.form_factor = Some("DIMM / SODIMM".to_string());
+            }
+        }
+        hw.mem_type = detected_type;
+        Some(hw)
+    } else {
+        None
+    }
+}
+
+pub fn parse_dmidecode_memory(text: &str) -> Option<MemoryHardware> {
+    let mut hw = MemoryHardware::default();
+    let mut total_slots = 0;
+    let mut used_slots = 0;
+    let mut installed = 0u64;
+
+    for block in text.split("Memory Device") {
+        if !block.contains("Size:") {
+            continue;
+        }
+        let lines: Vec<&str> = block.lines().collect();
+        total_slots += 1;
+        let mut block_size = 0u64;
+        let mut block_type = None;
+        let mut block_speed = None;
+        let mut block_mfr = None;
+        let mut block_form = None;
+
+        for line in lines {
+            let trimmed = line.trim();
+            if let Some((k, v)) = trimmed.split_once(':') {
+                let k = k.trim();
+                let v = v.trim();
+                match k {
+                    "Size" => {
+                        if !v.eq_ignore_ascii_case("No Module Installed") {
+                            if let Some(num_str) = v.split_whitespace().next() {
+                                if let Ok(val) = num_str.parse::<u64>() {
+                                    if v.contains("GB") {
+                                        block_size = val.saturating_mul(1024 * 1024 * 1024);
+                                    } else if v.contains("MB") {
+                                        block_size = val.saturating_mul(1024 * 1024);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    "Type" => {
+                        if !v.eq_ignore_ascii_case("Unknown") && !v.eq_ignore_ascii_case("Other") {
+                            block_type = Some(v.to_string());
+                        }
+                    }
+                    "Speed" | "Configured Memory Speed" => {
+                        if let Some(num_str) = v.split_whitespace().next() {
+                            if let Ok(spd) = num_str.parse::<u64>() {
+                                if spd > 0 {
+                                    block_speed = Some(spd);
+                                }
+                            }
+                        }
+                    }
+                    "Manufacturer" => {
+                        if !v.eq_ignore_ascii_case("Unknown")
+                            && !v.eq_ignore_ascii_case("Not Specified")
+                            && !v.eq_ignore_ascii_case("NO DIMM")
+                            && !v.is_empty()
+                        {
+                            block_mfr = Some(v.to_string());
+                        }
+                    }
+                    "Form Factor" => {
+                        if !v.eq_ignore_ascii_case("Unknown") && !v.is_empty() {
+                            block_form = Some(v.to_string());
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        if block_size > 0 {
+            used_slots += 1;
+            installed = installed.saturating_add(block_size);
+            if hw.mem_type.is_none() {
+                hw.mem_type = block_type;
+            }
+            if hw.speed_mts.is_none() {
+                hw.speed_mts = block_speed;
+            }
+            if hw.manufacturer.is_none() {
+                hw.manufacturer = block_mfr;
+            }
+            if hw.form_factor.is_none() {
+                hw.form_factor = block_form;
+            }
+        }
+    }
+
+    if total_slots > 0 {
+        hw.slots_used = used_slots;
+        hw.slots_total = total_slots;
+        hw.installed_bytes = installed;
+        Some(hw)
+    } else {
+        None
+    }
+}
+
+pub fn read_memory_hardware() -> MemoryHardware {
+    if let Ok(data) = fs::read_to_string("/run/udev/data/+dmi:id") {
+        if let Some(hw) = parse_udev_memory(&data) {
+            return hw;
+        }
+    }
+    if let Some(out) = run_cmd("udevadm", &["info", "--export-db"]) {
+        if let Some(hw) = parse_udev_memory(&out) {
+            return hw;
+        }
+    }
+    if let Some(hw) = read_edac_memory() {
+        return hw;
+    }
+    if let Some(out) = run_cmd("dmidecode", &["-t", "17"])
+        .or_else(|| run_cmd("sudo", &["-n", "dmidecode", "-t", "17"]))
+    {
+        if let Some(hw) = parse_dmidecode_memory(&out) {
+            return hw;
+        }
+    }
+    MemoryHardware::default()
+}
+
+fn read_memory_info(hw: &MemoryHardware) -> MemoryInfo {
     let mut m: HashMap<String, u64> = HashMap::new();
     for line in read_text("/proc/meminfo").lines() {
         if let Some((k, rest)) = line.split_once(':') {
@@ -2410,6 +2716,11 @@ fn read_memory_info() -> MemoryInfo {
     let used = total.saturating_sub(avail);
     let swap_total = m.get("SwapTotal").copied().unwrap_or(0);
     let swap_free = m.get("SwapFree").copied().unwrap_or(0);
+    let hw_reserved = if hw.installed_bytes > total {
+        hw.installed_bytes - total
+    } else {
+        0
+    };
     MemoryInfo {
         total,
         used,
@@ -2432,6 +2743,15 @@ fn read_memory_info() -> MemoryInfo {
         } else {
             0.0
         },
+        speed_mts: hw.speed_mts,
+        mem_type: hw.mem_type.clone(),
+        manufacturer: hw.manufacturer.clone(),
+        form_factor: hw.form_factor.clone(),
+        slots_used: hw.slots_used,
+        slots_total: hw.slots_total,
+        hw_reserved,
+        installed: hw.installed_bytes.max(total),
+        max_capacity: hw.max_capacity,
     }
 }
 
@@ -2617,5 +2937,73 @@ mod tests {
         assert!(rss >= pss || rss > 0);
         // Zero RSS returns (0, 0)
         assert_eq!(Sampler::read_proc_mem(pid, 4096, 0), (0, 0));
+    }
+
+    #[test]
+    fn test_parse_udev_memory() {
+        let sample = r#"
+E:MEMORY_ARRAY_MAX_CAPACITY=68719476736
+E:MEMORY_DEVICE_0_SIZE=8589934592
+E:MEMORY_DEVICE_0_TYPE=LPDDR5
+E:MEMORY_DEVICE_0_SPEED_MTS=6400
+E:MEMORY_DEVICE_0_MANUFACTURER=Kingston
+E:MEMORY_DEVICE_0_FORM_FACTOR=Row Of Chips
+E:MEMORY_DEVICE_1_SIZE=8589934592
+E:MEMORY_DEVICE_1_TYPE=LPDDR5
+E:MEMORY_DEVICE_1_SPEED_MTS=6400
+E:MEMORY_DEVICE_1_MANUFACTURER=Kingston
+E:MEMORY_DEVICE_1_FORM_FACTOR=Row Of Chips
+"#;
+        let hw = parse_udev_memory(sample).expect("should parse udev memory");
+        assert_eq!(hw.mem_type.as_deref(), Some("LPDDR5"));
+        assert_eq!(hw.speed_mts, Some(6400));
+        assert_eq!(hw.manufacturer.as_deref(), Some("Kingston"));
+        assert_eq!(hw.form_factor.as_deref(), Some("Row Of Chips"));
+        assert_eq!(hw.slots_used, 2);
+        assert_eq!(hw.slots_total, 2);
+        assert_eq!(hw.installed_bytes, 17179869184);
+        assert_eq!(hw.max_capacity, Some(68719476736));
+    }
+
+    #[test]
+    fn test_parse_dmidecode_memory() {
+        let sample = r#"
+# dmidecode 3.5
+Handle 0x0017, DMI type 17, 92 bytes
+Memory Device
+	Array Handle: 0x0016
+	Total Width: 64 bits
+	Data Width: 64 bits
+	Size: 16 GB
+	Form Factor: SODIMM
+	Type: DDR5
+	Speed: 4800 MT/s
+	Manufacturer: Kingston
+	Configured Memory Speed: 4800 MT/s
+
+Handle 0x0018, DMI type 17, 92 bytes
+Memory Device
+	Array Handle: 0x0016
+	Size: No Module Installed
+	Form Factor: SODIMM
+	Type: Unknown
+"#;
+        let hw = parse_dmidecode_memory(sample).expect("should parse dmidecode");
+        assert_eq!(hw.mem_type.as_deref(), Some("DDR5"));
+        assert_eq!(hw.speed_mts, Some(4800));
+        assert_eq!(hw.manufacturer.as_deref(), Some("Kingston"));
+        assert_eq!(hw.form_factor.as_deref(), Some("SODIMM"));
+        assert_eq!(hw.slots_used, 1);
+        assert_eq!(hw.slots_total, 2);
+        assert_eq!(hw.installed_bytes, 16 * 1024 * 1024 * 1024);
+    }
+
+    #[test]
+    fn test_read_memory_hardware_live() {
+        let hw = read_memory_hardware();
+        if let Some(ref t) = hw.mem_type {
+            assert!(!t.is_empty());
+        }
+        assert!(hw.slots_total > 0 || hw.installed_bytes > 0);
     }
 }

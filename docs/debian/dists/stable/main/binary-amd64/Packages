@@ -7,11 +7,11 @@ Maintainer: Shripad <shripad-jyothinath@users.noreply.github.com>
 Depends: libc6, libgl1 | libegl1, libx11-6, libxkbcommon0, hicolor-icon-theme, desktop-file-utils
 Recommends: iproute2, wireless-tools, pciutils
 Filename: pool/main/p/procharbor/procharbor_1.3.0_amd64.deb
-Size: 3485522
-MD5sum: 1967580475bbda7f69b8e0d5918cac2c
-SHA1: ef9f5e83b1833137b805538214854bf2427d6cf8
-SHA256: 05c9612135e30effff9b134b0919c1ed38770fa4bfdf44810f3b9198518c3679
-SHA512: 910a0af0202bbd21cde3f1abeeccf83365b844e43659acb493c2f16e7fb09f18930409ec4d0d5c4d27594f16dc99f97b44da742ed7fc4e251754aa30a34f1761
+Size: 3492042
+MD5sum: c7f218b62f3ccb4f1461ccc24abfd0ce
+SHA1: 15be615a09beda190707b77a6322e817a3b8e157
+SHA256: fd09744293a2a14289784bb3b4c3c1ee30efbb7a3400652b608a9c41b20e88f4
+SHA512: 70fabe2c3facb6606d3506fc894e3b5221530b6103cdaafbd22663d7f4147dc95b7ff8cf1b943822ae357b12521477a8e70cb603b1d1cef992b0026989d4ec8d
 Homepage: https://github.com/shripad-jyothinath/procharbor
 Description: Native Rust task manager and system monitor
  ProcHarbor is a lightweight Linux task manager and system monitor built in Rust.

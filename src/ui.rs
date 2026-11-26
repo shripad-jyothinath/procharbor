@@ -2021,11 +2021,30 @@ impl ProcHarborApp {
                                         "{} · {} cores, {} logical processors",
                                         sys.cpu.model, sys.cpu.cores, sys.cpu.logical
                                     ),
-                                    PerfItem::Memory => format!(
-                                        "{} total · {} available",
-                                        fmt_bytes(Some(sys.memory.total as f64), 1),
-                                        fmt_bytes(Some(sys.memory.available as f64), 1)
-                                    ),
+                                    PerfItem::Memory => {
+                                        let mut parts = Vec::new();
+                                        parts.push(format!(
+                                            "{} total",
+                                            fmt_bytes(Some(sys.memory.total as f64), 1)
+                                        ));
+                                        parts.push(format!(
+                                            "{} available",
+                                            fmt_bytes(Some(sys.memory.available as f64), 1)
+                                        ));
+                                        if let Some(ref t) = sys.memory.mem_type {
+                                            if let Some(spd) = sys.memory.speed_mts {
+                                                parts.push(format!("{} {} MT/s", t, spd));
+                                            } else {
+                                                parts.push(t.clone());
+                                            }
+                                        } else if let Some(spd) = sys.memory.speed_mts {
+                                            parts.push(format!("{} MT/s", spd));
+                                        }
+                                        if let Some(ref mfr) = sys.memory.manufacturer {
+                                            parts.push(mfr.clone());
+                                        }
+                                        parts.join(" · ")
+                                    }
                                     PerfItem::Disk => match disk0 {
                                         Some(d) => format!(
                                             "{} · {}",
@@ -2770,6 +2789,29 @@ fn build_perf_stats(
             } else {
                 0.0
             };
+            let speed_val = m
+                .speed_mts
+                .map(|s| format!("{} MT/s", s))
+                .unwrap_or_else(|| "—".into());
+            let slots_val = if m.slots_total > 0 {
+                format!("{} of {}", m.slots_used, m.slots_total)
+            } else {
+                "—".into()
+            };
+            let form_val = m.form_factor.clone().unwrap_or_else(|| "—".into());
+            let hw_res_val = if m.hw_reserved > 0 {
+                fmt_bytes(Some(m.hw_reserved as f64), 1)
+            } else {
+                "—".into()
+            };
+            let type_val = m.mem_type.clone().unwrap_or_else(|| "—".into());
+            let mfr_val = m.manufacturer.clone().unwrap_or_else(|| "—".into());
+            let installed_val = if m.installed > 0 {
+                fmt_bytes(Some(m.installed as f64), 1)
+            } else {
+                fmt_bytes(Some(m.total as f64), 1)
+            };
+
             vec![
                 (
                     "In use".into(),
@@ -2791,6 +2833,24 @@ fn build_perf_stats(
                     fmt_bytes(Some(m.cached as f64), 1),
                     String::new(),
                 ),
+                ("Speed".into(), speed_val, String::new()),
+                ("Slots used".into(), slots_val, String::new()),
+                ("Form factor".into(), form_val, String::new()),
+                ("Hardware reserved".into(), hw_res_val, String::new()),
+                ("Memory type".into(), type_val, String::new()),
+                ("Manufacturer".into(), mfr_val, String::new()),
+                (
+                    "Installed RAM".into(),
+                    installed_val,
+                    m.max_capacity
+                        .map(|c| format!("max {}", fmt_bytes(Some(c as f64), 0)))
+                        .unwrap_or_default(),
+                ),
+                (
+                    "Swap used".into(),
+                    fmt_bytes(Some(m.swap_used as f64), 1),
+                    format!("of {}", fmt_bytes(Some(m.swap_total as f64), 1)),
+                ),
                 (
                     "Paged pool".into(),
                     fmt_bytes(Some(m.slab as f64), 1),
@@ -2802,16 +2862,6 @@ fn build_perf_stats(
                     "kernel stack + page tables".into(),
                 ),
                 (
-                    "Total".into(),
-                    fmt_bytes(Some(m.total as f64), 1),
-                    String::new(),
-                ),
-                (
-                    "Swap used".into(),
-                    fmt_bytes(Some(m.swap_used as f64), 1),
-                    format!("of {}", fmt_bytes(Some(m.swap_total as f64), 1)),
-                ),
-                (
                     "Dirty".into(),
                     fmt_bytes(Some(m.dirty as f64), 1),
                     String::new(),
@@ -2820,16 +2870,6 @@ fn build_perf_stats(
                     "Writeback".into(),
                     fmt_bytes(Some(m.writeback as f64), 1),
                     String::new(),
-                ),
-                (
-                    "Buffers".into(),
-                    fmt_bytes(Some(m.buffers as f64), 1),
-                    String::new(),
-                ),
-                (
-                    "RAM speed".into(),
-                    "—".into(),
-                    "requires root (dmidecode)".into(),
                 ),
             ]
         }
