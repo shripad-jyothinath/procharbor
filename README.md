@@ -4,7 +4,7 @@
 
 <h1 align="center">ProcHarbor</h1>
 
-<p align="center">A native GTK4 task manager and system monitor for Linux.</p>
+<p align="center">A lightweight native Linux task manager and system monitor written in Rust.</p>
 
 <p align="center">
   <a href="https://shripad-jyothinath.github.io/procharbor/">Website</a> ·
@@ -12,10 +12,11 @@
   <a href="https://github.com/shripad-jyothinath/procharbor">Source</a>
 </p>
 
-ProcHarbor is an independent Linux desktop task manager built with GTK4 and
-Python. It covers the tabs people expect from a task manager — processes,
+ProcHarbor is an independent Linux desktop task manager written in Rust with
+`eframe`/`egui`. It covers the tabs people expect from a task manager — processes,
 performance, startup apps, users, details and services — using `/proc`, `/sys`,
-systemd and DRM fdinfo directly. No root, no daemon, no network access.
+systemd and DRM fdinfo directly. No root, no daemon, no network access, and no
+Python runtime overhead.
 
 ![ProcHarbor screenshot](assets/screenshot.png)
 
@@ -24,7 +25,7 @@ systemd and DRM fdinfo directly. No root, no daemon, no network access.
 - **Processes** — split into **Apps**, **Background** and **System**
   sections, grouped by executable with application icons, groups collapsed by
   default, CPU and memory load colouring, sortable columns, search,
-  per-process CPU, memory, disk, network and GPU, End task.
+  per-process CPU, memory, disk, network and GPU, End task and force kill.
 - **Performance** — CPU (per-core clocks and charts, package temperature),
   Memory, Disk (volumes, NVMe temperature), Wi-Fi (signal, link rate, adapter,
   power save) and GPU, all with live charts.
@@ -36,7 +37,7 @@ systemd and DRM fdinfo directly. No root, no daemon, no network access.
 - **Details** — flat process table: PID, status, user, CPU, memory, disk,
   network, GPU, threads, handles, priority and command line.
 - **Services** — systemd units with main PID, state, startup type and scope.
-- Search, column sorting, pause, end task, light/dark theme and `Ctrl+F`.
+- Search, column sorting, pause, end task or force kill, light/dark theme and `Ctrl+F`.
 
 ## Install
 
@@ -61,10 +62,16 @@ procharbor
 
 ### From source
 
-Requires Python 3.8+, PyGObject, GTK4 and pycairo:
+Requires a Rust toolchain (`rustc` / `cargo`):
 
 ```sh
 ./run.sh
+```
+
+Or run directly with Cargo:
+
+```sh
+cargo run --release
 ```
 
 Install a menu entry and desktop shortcut for the source checkout:
@@ -73,18 +80,16 @@ Install a menu entry and desktop shortcut for the source checkout:
 ./install-shortcut.sh
 ```
 
-## Build the Debian packages
+## Build the Debian package
 
 ```sh
 ./build-deb.sh
 ```
 
-This creates `dist/procharbor_1.3.0_amd64.deb`,
-`dist/procharbor_1.3.0_arm64.deb` and `dist/SHA256SUMS`. The packages contain
-the same pure-Python application and icons; the architecture-specific metadata
-is provided for each target.
+This builds the native release binary and creates `dist/procharbor_1.3.0_<arch>.deb`
+and `dist/SHA256SUMS`.
 
-Build requirements: `dpkg-deb`, Python 3 with GdkPixbuf (`python3-gi`).
+Build requirements: Rust (`cargo`), `dpkg-deb`.
 
 ## Linux mappings
 
@@ -103,9 +108,8 @@ Build requirements: `dpkg-deb`, Python 3 with GdkPixbuf (`python3-gi`).
 
 ## Performance
 
-The process tables use GTK fixed-height rows, so only visible rows are
-rendered. Idle cost is roughly the sampler alone — about 4–6% of one core —
-including per-process GPU and network collection.
+Compiled to a single native Rust binary using GPU-accelerated `eframe` (`glow`)
+rendering and direct `/proc` / `/sys` parsing without interpreter overhead.
 
 ## License
 
