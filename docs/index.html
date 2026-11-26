@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ProcHarbor — Native GTK4 Task Manager for Linux</title>
-<meta name="description" content="ProcHarbor is a native GTK4 task manager and system monitor for Linux. Apps, Background and System processes, performance graphs, per-core clocks, startup, services and Debian packages.">
+<title>ProcHarbor — Native Linux Task Manager in Rust</title>
+<meta name="description" content="ProcHarbor is a lightweight native Linux task manager and system monitor written in Rust. Apps, Background and System processes, performance graphs, per-core clocks, startup, services and Debian packages.">
 <meta name="color-scheme" content="dark">
-<meta property="og:title" content="ProcHarbor — Native GTK4 Task Manager for Linux">
-<meta property="og:description" content="A native GTK4 task manager and system monitor for Linux. No root daemon, no telemetry.">
+<meta property="og:title" content="ProcHarbor — Native Linux Task Manager in Rust">
+<meta property="og:description" content="A lightweight native Linux task manager and system monitor written in Rust. No root daemon, no telemetry.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://shripad-jyothinath.github.io/procharbor/assets/screenshot.png">
 <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
@@ -119,14 +119,14 @@
 <header class="hero">
   <div class="wrap">
     <img class="logo" src="assets/logo.svg" alt="ProcHarbor logo">
-    <div class="eyebrow">Linux · GTK4 · Open source</div>
+    <div class="eyebrow">Linux · Rust · Open source</div>
     <h1>ProcHarbor</h1>
-    <p class="tagline">A native GTK4 task manager and system monitor for Linux.</p>
+    <p class="tagline">A lightweight native Linux task manager and system monitor written in Rust.</p>
     <p class="lede">
       Apps, background and system processes, app icons, load-coloured CPU and
       memory, live performance graphs, per-core clocks, Wi-Fi, GPU, startup and systemd
       services — straight from <code>/proc</code> and <code>/sys</code>.
-      No root daemon, no telemetry, no network access.
+      No root daemon, no telemetry, no network access, and zero Python runtime overhead.
     </p>
     <div class="badges">
       <span class="badge">Debian packages</span>
@@ -181,7 +181,7 @@
 
   <section>
     <h2>Install</h2>
-    <p class="section-sub">Grab the package for your architecture and install it with apt. Dependencies on GTK4, PyGObject and pycairo are resolved automatically.</p>
+    <p class="section-sub">Grab the standalone package for your architecture and install it with apt. Standalone native binary with zero runtime dependencies.</p>
     <div class="install">
       <div>
         <pre><code># Debian / Ubuntu — x86_64
@@ -192,7 +192,7 @@ sudo apt install ./procharbor_1.3.0_arm64.deb
 
 # Launch
 procharbor</code></pre>
-        <p class="note">Or run from source with <code>./run.sh</code>. The app requires Python 3.8+, PyGObject, GTK4 and pycairo.</p>
+        <p class="note">Or run from source with <code>./run.sh</code> or <code>cargo run --release</code>.</p>
       </div>
       <ul class="checklist">
         <li><strong>No root daemon.</strong> The app runs as your user; the only privileged thing it does is ask before ending a process.</li>
@@ -207,10 +207,8 @@ procharbor</code></pre>
   <section>
     <h2>Requirements</h2>
     <p class="section-sub">
-      Ubuntu 24.04 / Zorin 18 or any modern Debian-based desktop with GTK4.
-      The bundled Debian package depends on <code>python3-gi</code>,
-      <code>gir1.2-gtk-4.0</code>, <code>python3-gi-cairo</code>,
-      <code>python3-cairo</code> and <code>librsvg2-common</code>.
+      Ubuntu 22.04+, Debian 12+, Arch, Fedora or any modern Linux desktop on Wayland or X11.
+      Standalone native Rust binary compiled with GPU acceleration (glow/OpenGL).
       Wi-Fi link details use <code>iwconfig</code> when available; per-process
       network attribution uses <code>ss</code>.
     </p>
