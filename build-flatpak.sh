@@ -12,6 +12,13 @@ if ! command -v flatpak-builder >/dev/null 2>&1; then
     exit 1
 fi
 
+if [ ! -f "$HERE/cargo-sources.json" ] || [ "$HERE/Cargo.lock" -nt "$HERE/cargo-sources.json" ]; then
+    echo "Updating cargo-sources.json from Cargo.lock..."
+    if command -v uv >/dev/null 2>&1; then
+        uv run https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/cargo/flatpak-cargo-generator.py "$HERE/Cargo.lock" -o "$HERE/cargo-sources.json"
+    fi
+fi
+
 mkdir -p "$OUT_DIR"
 echo "Building Flatpak application..."
 flatpak-builder --force-clean --repo="$REPO_DIR" "$BUILD_DIR" "$MANIFEST"

@@ -28,12 +28,13 @@ build-options:
   append-path: /usr/lib/sdk/rust-stable/bin
   env:
     CARGO_HOME: /run/build/procharbor/cargo
+    CARGO_NET_OFFLINE: 'true'
 
 modules:
   - name: procharbor
     buildsystem: simple
     build-commands:
-      - cargo build --release --verbose
+      - cargo build --offline --release --verbose
       - install -Dm755 target/release/procharbor /app/bin/procharbor
       - install -Dm644 assets/io.github.shripad_jyothinath.procharbor.desktop /app/share/applications/io.github.shripad_jyothinath.procharbor.desktop
       - install -Dm644 assets/io.github.shripad_jyothinath.procharbor.metainfo.xml /app/share/metainfo/io.github.shripad_jyothinath.procharbor.metainfo.xml
@@ -42,3 +43,4 @@ modules:
     sources:
       - type: dir
         path: .
+      - cargo-sources.json
