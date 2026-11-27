@@ -582,23 +582,23 @@ impl ProcHarborApp {
         let pal = self.theme.palette();
         let frame = Frame::NONE
             .fill(pal.side)
-            .inner_margin(Margin::symmetric(8, 10))
+            .inner_margin(Margin::symmetric(10, 10))
             .stroke(Stroke::new(1.0, pal.border_soft));
 
         egui::Panel::left("sidebar")
             .resizable(false)
-            .exact_size(170.0)
+            .exact_size(210.0)
             .frame(frame)
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.add_space(2.0);
                     if let Some(tex) = self.icons.logo(&ctx) {
-                        ui.image((tex.id(), Vec2::splat(22.0)));
+                        ui.image((tex.id(), Vec2::splat(24.0)));
                     }
                     ui.add_space(4.0);
                     ui.label(
                         RichText::new("ProcHarbor")
-                            .size(15.0)
+                            .size(15.5)
                             .strong()
                             .color(pal.text),
                     );
@@ -614,22 +614,22 @@ impl ProcHarborApp {
                     };
                     let resp = Frame::NONE
                         .fill(fill)
-                        .corner_radius(CornerRadius::same(5))
-                        .inner_margin(Margin::symmetric(8, 6))
+                        .corner_radius(CornerRadius::same(6))
+                        .inner_margin(Margin::symmetric(10, 7))
                         .show(ui, |ui| {
                             ui.set_width(ui.available_width());
                             ui.horizontal(|ui| {
                                 let dot_col = if selected { pal.accent } else { pal.dim };
                                 let (dot_r, _) = ui.allocate_exact_size(
-                                    Vec2::new(4.0, 12.0),
+                                    Vec2::new(5.0, 14.0),
                                     egui::Sense::hover(),
                                 );
                                 if selected {
                                     ui.painter()
                                         .rect_filled(dot_r, CornerRadius::same(2), dot_col);
                                 }
-                                ui.add_space(3.0);
-                                ui.label(RichText::new(tab.label()).size(13.0).color(pal.text));
+                                ui.add_space(4.0);
+                                ui.label(RichText::new(tab.label()).size(13.5).color(pal.text));
                             });
                         })
                         .response
@@ -638,7 +638,7 @@ impl ProcHarborApp {
                     if resp.hovered() && !selected {
                         ui.painter().rect_stroke(
                             resp.rect,
-                            CornerRadius::same(5),
+                            CornerRadius::same(6),
                             Stroke::new(1.0, pal.border_soft),
                             egui::StrokeKind::Inside,
                         );
@@ -660,8 +660,8 @@ impl ProcHarborApp {
 
                     ui.horizontal(|ui| {
                         ui.add_space(4.0);
-                        ui.label(RichText::new("●").size(10.0).color(dot_col));
-                        ui.label(RichText::new(status_txt).size(11.5).color(pal.dim));
+                        ui.label(RichText::new("●").size(11.0).color(dot_col));
+                        ui.label(RichText::new(status_txt).size(12.0).color(pal.dim));
                     });
                     ui.add_space(3.0);
 
@@ -671,7 +671,7 @@ impl ProcHarborApp {
                     };
                     if ui
                         .add(
-                            egui::Button::new(RichText::new(theme_label).size(12.0).color(pal.dim))
+                            egui::Button::new(RichText::new(theme_label).size(12.5).color(pal.dim))
                                 .frame(false),
                         )
                         .clicked()
@@ -1922,15 +1922,15 @@ impl ProcHarborApp {
         // Left performance category selector panel
         egui::Panel::left("perf_nav")
             .resizable(false)
-            .exact_size(160.0)
+            .exact_size(210.0)
             .frame(
                 Frame::NONE
                     .fill(pal.bg)
-                    .inner_margin(Margin::symmetric(6, 6))
+                    .inner_margin(Margin::symmetric(8, 8))
                     .stroke(Stroke::new(1.0, pal.border_soft)),
             )
             .show(ui, |ui| {
-                ui.spacing_mut().item_spacing.y = 3.0;
+                ui.spacing_mut().item_spacing.y = 4.0;
                 for item in PerfItem::ALL {
                     let selected = self.perf_item == item;
                     let val_text = match item {
@@ -1958,7 +1958,7 @@ impl ProcHarborApp {
 
                     let row_w = ui.available_width();
                     let (rect, resp) =
-                        ui.allocate_exact_size(Vec2::new(row_w, 44.0), egui::Sense::click());
+                        ui.allocate_exact_size(Vec2::new(row_w, 54.0), egui::Sense::click());
 
                     let bg = if selected {
                         pal.accent_soft
@@ -1968,7 +1968,7 @@ impl ProcHarborApp {
                         Color32::TRANSPARENT
                     };
                     if bg != Color32::TRANSPARENT {
-                        ui.painter().rect_filled(rect, CornerRadius::same(5), bg);
+                        ui.painter().rect_filled(rect, CornerRadius::same(6), bg);
                     }
                     if selected {
                         let bar = egui::Rect::from_min_size(
@@ -1979,16 +1979,16 @@ impl ProcHarborApp {
                             .rect_filled(bar, CornerRadius::same(2), item.color());
                     }
 
-                    let inner = rect.shrink2(Vec2::new(8.0, 4.0));
+                    let inner = rect.shrink2(Vec2::new(10.0, 5.0));
                     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(inner));
                     child.set_width(inner.width());
                     child.horizontal(|ui| {
-                        ui.label(RichText::new(item.label()).size(12.5).strong().color(pal.text));
+                        ui.label(RichText::new(item.label()).size(13.0).strong().color(pal.text));
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.label(RichText::new(val_text).size(11.5).color(pal.dim));
+                            ui.label(RichText::new(val_text).size(12.0).color(pal.dim));
                         });
                     });
-                    draw_sparkline(&mut child, spark_data, item.color(), 18.0);
+                    draw_sparkline(&mut child, spark_data, item.color(), 20.0);
 
                     if resp.clicked() {
                         self.perf_item = item;
@@ -2004,10 +2004,17 @@ impl ProcHarborApp {
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
                         Frame::NONE
-                            .inner_margin(Margin::symmetric(14, 10))
+                            .inner_margin(Margin::symmetric(18, 12))
                             .show(ui, |ui| {
                                 let avail_w = ui.available_width().max(240.0);
                                 ui.set_width(avail_w);
+
+                                ui.label(
+                                    RichText::new(self.perf_item.label())
+                                        .size(22.0)
+                                        .strong()
+                                        .color(pal.text),
+                                );
 
                                 let subtitle = match self.perf_item {
                                     PerfItem::Cpu => format!(
@@ -2061,24 +2068,22 @@ impl ProcHarborApp {
                                         .unwrap_or_else(|| "No GPU".to_string()),
                                 };
 
-                                ui.horizontal_wrapped(|ui| {
-                                    ui.spacing_mut().item_spacing.x = 8.0;
-                                    ui.label(
-                                        RichText::new(self.perf_item.label())
-                                            .size(18.0)
-                                            .strong()
-                                            .color(pal.text),
-                                    );
-                                    ui.label(RichText::new(&subtitle).size(12.0).color(pal.dim));
-                                });
-                                ui.add_space(6.0);
+                                ui.add(
+                                    egui::Label::new(
+                                        RichText::new(&subtitle)
+                                            .size(12.5)
+                                            .color(pal.dim),
+                                    )
+                                    .wrap(),
+                                );
+                                ui.add_space(8.0);
 
                                 // Chart card
                                 Frame::NONE
                                     .fill(pal.panel)
                                     .stroke(Stroke::new(1.0, pal.border))
-                                    .corner_radius(CornerRadius::same(6))
-                                    .inner_margin(Margin::symmetric(10, 8))
+                                    .corner_radius(CornerRadius::same(8))
+                                    .inner_margin(Margin::same(10))
                                     .show(ui, |ui| {
                                         ui.set_width(ui.available_width());
                                         match self.perf_item {
@@ -2094,7 +2099,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     Some(100.0),
                                                     |v| format!("{:.0}%", v),
-                                                    140.0,
+                                                    175.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2114,7 +2119,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     Some(100.0),
                                                     |v| format!("{:.0}%", v),
-                                                    140.0,
+                                                    175.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2141,7 +2146,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     None,
                                                     |v| format!("{}/s", fmt_bytes(Some(v), 0)),
-                                                    140.0,
+                                                    175.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2168,7 +2173,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     None,
                                                     |v| format!("{}/s", fmt_bytes(Some(v), 0)),
-                                                    140.0,
+                                                    175.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2188,7 +2193,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     Some(100.0),
                                                     |v| format!("{:.0}%", v),
-                                                    140.0,
+                                                    175.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2202,22 +2207,27 @@ impl ProcHarborApp {
                                 // Memory composition bar directly underneath the chart
                                 if self.perf_item == PerfItem::Memory {
                                     let m = &sys.memory;
-                                    ui.add_space(6.0);
+                                    ui.add_space(8.0);
                                     Frame::NONE
                                         .fill(pal.panel)
                                         .stroke(Stroke::new(1.0, pal.border))
-                                        .corner_radius(CornerRadius::same(6))
-                                        .inner_margin(Margin::symmetric(10, 6))
+                                        .corner_radius(CornerRadius::same(8))
+                                        .inner_margin(Margin::symmetric(12, 8))
                                         .show(ui, |ui| {
                                             ui.set_width(ui.available_width());
                                             let free_b = m
                                                 .total
                                                 .saturating_sub(m.used)
                                                 .saturating_sub(m.cached);
+                                            let used_pct = if m.total > 0 {
+                                                m.used as f64 / m.total as f64 * 100.0
+                                            } else {
+                                                0.0
+                                            };
                                             ui.horizontal(|ui| {
                                                 ui.label(
                                                     RichText::new("Memory composition")
-                                                        .size(11.5)
+                                                        .size(12.0)
                                                         .strong()
                                                         .color(pal.text),
                                                 );
@@ -2226,45 +2236,46 @@ impl ProcHarborApp {
                                                     |ui| {
                                                         ui.label(
                                                             RichText::new(format!(
-                                                                "Free {}",
+                                                                "Free: {}",
                                                                 fmt_bytes(Some(free_b as f64), 1)
                                                             ))
-                                                            .size(11.0)
+                                                            .size(11.5)
                                                             .color(pal.dim),
                                                         );
                                                         ui.label(
                                                             RichText::new("·")
-                                                                .size(11.0)
+                                                                .size(11.5)
                                                                 .color(pal.faint),
                                                         );
                                                         ui.label(
                                                             RichText::new(format!(
-                                                                "Cached {}",
+                                                                "Cached: {}",
                                                                 fmt_bytes(
                                                                     Some(m.cached as f64),
                                                                     1
                                                                 )
                                                             ))
-                                                            .size(11.0)
+                                                            .size(11.5)
                                                             .color(pal.purple),
                                                         );
                                                         ui.label(
                                                             RichText::new("·")
-                                                                .size(11.0)
+                                                                .size(11.5)
                                                                 .color(pal.faint),
                                                         );
                                                         ui.label(
                                                             RichText::new(format!(
-                                                                "In use {}",
-                                                                fmt_bytes(Some(m.used as f64), 1)
+                                                                "In use: {} ({:.0}%)",
+                                                                fmt_bytes(Some(m.used as f64), 1),
+                                                                used_pct
                                                             ))
-                                                            .size(11.0)
+                                                            .size(11.5)
                                                             .color(pal.accent),
                                                         );
                                                     },
                                                 );
                                             });
-                                            ui.add_space(4.0);
+                                            ui.add_space(6.0);
                                             draw_composition_bar(
                                                 ui,
                                                 &pal,
@@ -2275,54 +2286,53 @@ impl ProcHarborApp {
                                         });
                                 }
 
-                                ui.add_space(8.0);
+                                ui.add_space(12.0);
 
-                                // High-density Windows Task Manager-style stats layout
+                                // Stats grid: clean Windows Task Manager 4-column layout
                                 let stats =
                                     build_perf_stats(sys, &self.snap.totals, self.perf_item);
-                                let is_wide = avail_w >= 520.0 && !stats.hardware.is_empty();
-
-                                if is_wide {
+                                let gap = 16.0_f32;
+                                let col_w = ((avail_w - 3.0 * gap) / 4.0).max(90.0);
+                                for chunk in stats.chunks(4) {
                                     ui.horizontal_top(|ui| {
-                                        let left_w = (avail_w * 0.58).floor();
-                                        let right_w = (avail_w - left_w - 14.0).max(160.0);
-
-                                        ui.allocate_ui_with_layout(
-                                            Vec2::new(left_w, 0.0),
-                                            Layout::top_down(Align::LEFT),
-                                            |ui| {
-                                                ui.set_width(left_w);
-                                                render_activity_metrics(
-                                                    ui,
-                                                    &pal,
-                                                    &stats.activity,
-                                                    left_w,
-                                                );
-                                            },
-                                        );
-
-                                        ui.add_space(14.0);
-
-                                        ui.allocate_ui_with_layout(
-                                            Vec2::new(right_w, 0.0),
-                                            Layout::top_down(Align::LEFT),
-                                            |ui| {
-                                                ui.set_width(right_w);
-                                                render_hardware_specs(
-                                                    ui,
-                                                    &pal,
-                                                    &stats.hardware,
-                                                    right_w,
-                                                );
-                                            },
-                                        );
+                                        ui.spacing_mut().item_spacing.x = gap;
+                                        for (lbl, val, sub) in chunk {
+                                            ui.allocate_ui_with_layout(
+                                                Vec2::new(col_w, 0.0),
+                                                Layout::top_down(Align::LEFT),
+                                                |ui| {
+                                                    ui.set_width(col_w);
+                                                    ui.label(
+                                                        RichText::new(lbl)
+                                                            .size(11.5)
+                                                            .color(pal.dim),
+                                                    );
+                                                    ui.add_space(1.0);
+                                                    ui.add(
+                                                        egui::Label::new(
+                                                            RichText::new(val)
+                                                                .size(16.5)
+                                                                .strong()
+                                                                .color(pal.text),
+                                                        )
+                                                        .wrap(),
+                                                    );
+                                                    if !sub.is_empty() {
+                                                        ui.add_space(1.0);
+                                                        ui.add(
+                                                            egui::Label::new(
+                                                                RichText::new(sub)
+                                                                    .size(11.0)
+                                                                    .color(pal.faint),
+                                                            )
+                                                            .wrap(),
+                                                        );
+                                                    }
+                                                },
+                                            );
+                                        }
                                     });
-                                } else {
-                                    render_activity_metrics(ui, &pal, &stats.activity, avail_w);
-                                    if !stats.hardware.is_empty() {
-                                        ui.add_space(6.0);
-                                        render_hardware_specs(ui, &pal, &stats.hardware, avail_w);
-                                    }
+                                    ui.add_space(8.0);
                                 }
 
                                 ui.add_space(4.0);
@@ -2758,136 +2768,71 @@ fn draw_legend(ui: &mut egui::Ui, pal: &Palette, items: &[(&str, Color32)]) {
     });
 }
 
-struct PerfStatsGroup {
-    activity: Vec<(String, String, String)>,
-    hardware: Vec<(String, String)>,
-}
-
-fn render_activity_metrics(
-    ui: &mut egui::Ui,
-    pal: &Palette,
-    metrics: &[(String, String, String)],
-    width: f32,
-) {
-    let cols = if width >= 380.0 { 3 } else { 2 };
-    let gap_x = 10.0_f32;
-    let col_w = ((width - (cols as f32 - 1.0) * gap_x) / cols as f32).max(65.0);
-
-    for chunk in metrics.chunks(cols) {
-        ui.horizontal_top(|ui| {
-            ui.spacing_mut().item_spacing.x = gap_x;
-            for (lbl, val, sub) in chunk {
-                ui.allocate_ui_with_layout(
-                    Vec2::new(col_w, 0.0),
-                    Layout::top_down(Align::LEFT),
-                    |ui| {
-                        ui.set_width(col_w);
-                        ui.label(RichText::new(lbl).size(11.0).color(pal.dim));
-                        ui.horizontal_wrapped(|ui| {
-                            ui.spacing_mut().item_spacing.x = 4.0;
-                            ui.label(RichText::new(val).size(14.0).strong().color(pal.text));
-                            if !sub.is_empty() {
-                                ui.label(RichText::new(sub).size(10.5).color(pal.faint));
-                            }
-                        });
-                    },
-                );
-            }
-        });
-        ui.add_space(4.0);
-    }
-}
-
-fn render_hardware_specs(
-    ui: &mut egui::Ui,
-    pal: &Palette,
-    specs: &[(String, String)],
-    width: f32,
-) {
-    let key_w = 112.0_f32.min(width * 0.45);
-    for (key, val) in specs {
-        if val.is_empty() {
-            continue;
-        }
-        ui.horizontal(|ui| {
-            ui.set_width(width);
-            ui.allocate_ui_with_layout(
-                Vec2::new(key_w, 17.0),
-                Layout::left_to_right(Align::Center),
-                |ui| {
-                    ui.label(RichText::new(key).size(11.5).color(pal.dim));
-                },
-            );
-            ui.add_space(4.0);
-            ui.label(RichText::new(val).size(11.5).strong().color(pal.text));
-        });
-        ui.add_space(2.0);
-    }
-}
-
 fn build_perf_stats(
     sys: &crate::sampler::SystemInfo,
     totals: &crate::sampler::Totals,
     item: PerfItem,
-) -> PerfStatsGroup {
+) -> Vec<(String, String, String)> {
     match item {
         PerfItem::Cpu => {
             let cpu = &sys.cpu;
             let max_cur = cpu.freqs.iter().copied().fold(0.0_f64, f64::max) / 1000.0;
             let turbo_str = if cpu.no_turbo == Some(1) { "off" } else { "on" };
-            PerfStatsGroup {
-                activity: vec![
-                    (
-                        "Utilization".into(),
-                        fmt_pct(Some(cpu.util)),
-                        format!("load {:.2} · {:.2}", cpu.load[0], cpu.load[1]),
-                    ),
-                    (
-                        "Speed".into(),
-                        format!("{:.2} GHz", cpu.freq / 1000.0),
-                        format!("max core {:.2} GHz · turbo {}", max_cur, turbo_str),
-                    ),
-                    (
-                        "Processes".into(),
-                        totals.processes.to_string(),
-                        String::new(),
-                    ),
-                    ("Threads".into(), totals.threads.to_string(), String::new()),
-                    ("Handles".into(), totals.handles.to_string(), String::new()),
-                    ("Uptime".into(), fmt_uptime(sys.uptime), String::new()),
-                ],
-                hardware: vec![
-                    (
-                        "Base speed".into(),
-                        format!("{:.2} GHz", cpu.base_mhz / 1000.0),
-                    ),
-                    ("Sockets".into(), cpu.sockets.to_string()),
-                    ("Cores".into(), cpu.cores.to_string()),
-                    (
-                        "Logical processors".into(),
-                        cpu.logical.to_string(),
-                    ),
-                    (
-                        "Virtualization".into(),
-                        if cpu.virtualization {
-                            "Enabled"
-                        } else {
-                            "Disabled"
-                        }
-                        .into(),
-                    ),
-                    (
-                        "Max policy".into(),
-                        format!("{:.2} GHz", cpu.max_policy_mhz / 1000.0),
-                    ),
-                    (
-                        "Temperature".into(),
-                        cpu.temp
-                            .map(|t| format!("{:.0} °C", t))
-                            .unwrap_or_else(|| "—".into()),
-                    ),
-                ],
-            }
+            vec![
+                (
+                    "Utilization".into(),
+                    fmt_pct(Some(cpu.util)),
+                    format!("load {:.2} · {:.2}", cpu.load[0], cpu.load[1]),
+                ),
+                (
+                    "Speed".into(),
+                    format!("{:.2} GHz", cpu.freq / 1000.0),
+                    format!("max core {:.2} GHz · turbo {}", max_cur, turbo_str),
+                ),
+                (
+                    "Processes".into(),
+                    totals.processes.to_string(),
+                    String::new(),
+                ),
+                ("Threads".into(), totals.threads.to_string(), String::new()),
+                (
+                    "Base speed".into(),
+                    format!("{:.2} GHz", cpu.base_mhz / 1000.0),
+                    if cpu.base_e_mhz > 0.0 {
+                        format!("P-core · E-core {:.2} GHz", cpu.base_e_mhz / 1000.0)
+                    } else {
+                        String::new()
+                    },
+                ),
+                ("Sockets".into(), cpu.sockets.to_string(), String::new()),
+                ("Cores".into(), cpu.cores.to_string(), String::new()),
+                (
+                    "Logical processors".into(),
+                    cpu.logical.to_string(),
+                    String::new(),
+                ),
+                (
+                    "Virtualization".into(),
+                    if cpu.virtualization {
+                        "Enabled"
+                    } else {
+                        "Disabled"
+                    }
+                    .into(),
+                    String::new(),
+                ),
+                (
+                    "Max speed".into(),
+                    format!("{:.2} GHz", cpu.max_policy_mhz / 1000.0),
+                    if cpu.no_turbo == Some(1) {
+                        "turbo off".into()
+                    } else {
+                        "turbo on".into()
+                    },
+                ),
+                ("Handles".into(), totals.handles.to_string(), String::new()),
+                ("Uptime".into(), fmt_uptime(sys.uptime), String::new()),
+            ]
         }
         PerfItem::Memory => {
             let m = &sys.memory;
@@ -2913,60 +2858,45 @@ fn build_perf_stats(
             };
             let type_val = m.mem_type.clone().unwrap_or_else(|| "—".into());
             let mfr_val = m.manufacturer.clone().unwrap_or_else(|| "—".into());
-            let installed_val = if m.installed > 0 {
-                fmt_bytes(Some(m.installed as f64), 1)
-            } else {
-                fmt_bytes(Some(m.total as f64), 1)
-            };
 
-            PerfStatsGroup {
-                activity: vec![
-                    (
-                        "In use".into(),
-                        fmt_bytes(Some(m.used as f64), 1),
-                        format!("{:.1}%", used_pct),
-                    ),
-                    (
-                        "Available".into(),
-                        fmt_bytes(Some(m.available as f64), 1),
-                        String::new(),
-                    ),
-                    (
-                        "Committed".into(),
-                        fmt_bytes(Some(m.committed as f64), 1),
-                        format!("of {}", fmt_bytes(Some(m.commit_limit as f64), 1)),
-                    ),
-                    (
-                        "Cached".into(),
-                        fmt_bytes(Some(m.cached as f64), 1),
-                        String::new(),
-                    ),
-                    (
-                        "Swap used".into(),
-                        fmt_bytes(Some(m.swap_used as f64), 1),
-                        format!("of {}", fmt_bytes(Some(m.swap_total as f64), 1)),
-                    ),
-                    (
-                        "Paged pool".into(),
-                        fmt_bytes(Some(m.slab as f64), 1),
-                        "Slab cache".into(),
-                    ),
-                    (
-                        "Non-paged pool".into(),
-                        fmt_bytes(Some(m.kernel as f64), 1),
-                        "kernel stack + page tables".into(),
-                    ),
-                ],
-                hardware: vec![
-                    ("Speed".into(), speed_val),
-                    ("Slots used".into(), slots_val),
-                    ("Form factor".into(), form_val),
-                    ("Hardware reserved".into(), hw_res_val),
-                    ("Memory type".into(), type_val),
-                    ("Manufacturer".into(), mfr_val),
-                    ("Installed RAM".into(), installed_val),
-                ],
-            }
+            vec![
+                (
+                    "In use".into(),
+                    fmt_bytes(Some(m.used as f64), 1),
+                    format!("{:.1}%", used_pct),
+                ),
+                (
+                    "Available".into(),
+                    fmt_bytes(Some(m.available as f64), 1),
+                    String::new(),
+                ),
+                (
+                    "Committed".into(),
+                    fmt_bytes(Some(m.committed as f64), 1),
+                    format!("of {}", fmt_bytes(Some(m.commit_limit as f64), 1)),
+                ),
+                (
+                    "Cached".into(),
+                    fmt_bytes(Some(m.cached as f64), 1),
+                    String::new(),
+                ),
+                ("Speed".into(), speed_val, String::new()),
+                ("Slots used".into(), slots_val, String::new()),
+                ("Form factor".into(), form_val, String::new()),
+                ("Hardware reserved".into(), hw_res_val, String::new()),
+                ("Memory type".into(), type_val, String::new()),
+                ("Manufacturer".into(), mfr_val, String::new()),
+                (
+                    "Paged pool".into(),
+                    fmt_bytes(Some(m.slab as f64), 1),
+                    "Slab cache".into(),
+                ),
+                (
+                    "Non-paged pool".into(),
+                    fmt_bytes(Some(m.kernel as f64), 1),
+                    "Kernel".into(),
+                ),
+            ]
         }
         PerfItem::Disk => {
             let d = sys.disks.first();
@@ -2975,165 +2905,148 @@ fn build_perf_stats(
                 .iter()
                 .find(|v| v.mount == "/")
                 .or_else(|| sys.volumes.first());
-            PerfStatsGroup {
-                activity: vec![
-                    (
-                        "Active time".into(),
-                        fmt_pct(d.map(|x| x.active)),
-                        String::new(),
-                    ),
-                    (
-                        "Avg response".into(),
-                        format!("{:.1} ms", d.map(|x| x.response).unwrap_or(0.0)),
-                        String::new(),
-                    ),
-                    (
-                        "Read speed".into(),
-                        fmt_rate(d.map(|x| x.read)),
-                        String::new(),
-                    ),
-                    (
-                        "Write speed".into(),
-                        fmt_rate(d.map(|x| x.write)),
-                        String::new(),
-                    ),
-                    (
-                        "IOPS".into(),
-                        fmt_thousands(d.map(|x| x.iops.round() as u64).unwrap_or(0)),
-                        String::new(),
-                    ),
-                    (
-                        "Capacity used".into(),
-                        root_vol
-                            .map(|v| {
-                                format!(
-                                    "{} / {}",
-                                    fmt_bytes(Some(v.used as f64), 1),
-                                    fmt_bytes(Some(v.total as f64), 1)
-                                )
-                            })
-                            .unwrap_or_else(|| "—".into()),
-                        root_vol
-                            .map(|v| format!("{:.0}%", v.percent))
-                            .unwrap_or_default(),
-                    ),
-                ],
-                hardware: vec![
-                    (
-                        "Model".into(),
-                        d.map(|x| x.model.clone()).unwrap_or_else(|| "—".into()),
-                    ),
-                    (
-                        "Temperature".into(),
-                        d.and_then(|x| x.temp)
-                            .map(|t| format!("{:.0} °C", t))
-                            .unwrap_or_else(|| "—".into()),
-                    ),
-                ],
-            }
+            vec![
+                (
+                    "Active time".into(),
+                    fmt_pct(d.map(|x| x.active)),
+                    String::new(),
+                ),
+                (
+                    "Average response".into(),
+                    format!("{:.1} ms", d.map(|x| x.response).unwrap_or(0.0)),
+                    String::new(),
+                ),
+                (
+                    "Read speed".into(),
+                    fmt_rate(d.map(|x| x.read)),
+                    String::new(),
+                ),
+                (
+                    "Write speed".into(),
+                    fmt_rate(d.map(|x| x.write)),
+                    String::new(),
+                ),
+                (
+                    "IOPS".into(),
+                    fmt_thousands(d.map(|x| x.iops.round() as u64).unwrap_or(0)),
+                    String::new(),
+                ),
+                (
+                    "Capacity used".into(),
+                    root_vol
+                        .map(|v| {
+                            format!(
+                                "{} / {}",
+                                fmt_bytes(Some(v.used as f64), 1),
+                                fmt_bytes(Some(v.total as f64), 1)
+                            )
+                        })
+                        .unwrap_or_else(|| "—".into()),
+                    root_vol
+                        .map(|v| format!("{:.0}%", v.percent))
+                        .unwrap_or_default(),
+                ),
+                (
+                    "Model".into(),
+                    d.map(|x| x.model.clone()).unwrap_or_else(|| "—".into()),
+                    String::new(),
+                ),
+                (
+                    "Temperature".into(),
+                    d.and_then(|x| x.temp)
+                        .map(|t| format!("{:.0} °C", t))
+                        .unwrap_or_else(|| "—".into()),
+                    String::new(),
+                ),
+            ]
         }
         PerfItem::Wifi => match &sys.net.wifi {
             Some(w) => {
                 let wifi_iface = sys.net.interfaces.iter().find(|i| i.name == w.iface);
-                PerfStatsGroup {
-                    activity: vec![
-                        (
-                            "Send".into(),
-                            fmt_rate(wifi_iface.map(|i| i.tx)),
-                            String::new(),
-                        ),
-                        (
-                            "Receive".into(),
-                            fmt_rate(wifi_iface.map(|i| i.rx)),
-                            String::new(),
-                        ),
-                        (
-                            "Signal".into(),
-                            w.signal_dbm
-                                .map(|d| format!("{:.0} dBm", d))
-                                .unwrap_or_else(|| "—".into()),
-                            w.signal_pct
-                                .map(|p| format!("{:.0}%", p))
-                                .unwrap_or_default(),
-                        ),
-                        (
-                            "Link speed".into(),
-                            w.link_mbps
-                                .map(|m| format!("{:.0} Mbps", m))
-                                .unwrap_or_else(|| "—".into()),
-                            String::new(),
-                        ),
-                    ],
-                    hardware: vec![
-                        (
-                            "SSID".into(),
-                            w.ssid.clone().unwrap_or_else(|| "—".into()),
-                        ),
-                        (
-                            "Adapter".into(),
-                            w.iface.clone(),
-                        ),
-                        (
-                            "Channel".into(),
-                            w.channel
-                                .map(|c| c.to_string())
-                                .unwrap_or_else(|| "—".into()),
-                        ),
-                        (
-                            "IPv4".into(),
-                            w.ipv4.clone().unwrap_or_else(|| "—".into()),
-                        ),
-                        (
-                            "MAC".into(),
-                            if w.mac.is_empty() {
-                                "—".into()
-                            } else {
-                                w.mac.clone()
-                            },
-                        ),
-                        (
-                            "Transmit power".into(),
-                            w.txpower
-                                .map(|p| format!("{} dBm", p))
-                                .unwrap_or_else(|| "—".into()),
-                        ),
-                    ],
-                }
-            }
-            None => PerfStatsGroup {
-                activity: vec![("Status".into(), "Disconnected".into(), String::new())],
-                hardware: vec![("Adapter".into(), "Not found".into())],
-            },
-        },
-        PerfItem::Gpu => match &sys.gpu {
-            Some(g) => PerfStatsGroup {
-                activity: vec![
-                    ("Utilization".into(), fmt_pct(Some(g.util)), String::new()),
+                vec![
                     (
-                        "Clock frequency".into(),
-                        g.freq_act
-                            .or(g.freq)
-                            .map(|f| format!("{} MHz", f))
+                        "Send".into(),
+                        fmt_rate(wifi_iface.map(|i| i.tx)),
+                        String::new(),
+                    ),
+                    (
+                        "Receive".into(),
+                        fmt_rate(wifi_iface.map(|i| i.rx)),
+                        String::new(),
+                    ),
+                    (
+                        "Signal".into(),
+                        w.signal_dbm
+                            .map(|d| format!("{:.0} dBm", d))
                             .unwrap_or_else(|| "—".into()),
-                        g.freq_max
-                            .map(|f| format!("max {} MHz", f))
+                        w.signal_pct
+                            .map(|p| format!("{:.0}%", p))
                             .unwrap_or_default(),
                     ),
                     (
-                        "Memory".into(),
-                        "Shared".into(),
-                        "uses system RAM".into(),
+                        "Link speed".into(),
+                        w.link_mbps
+                            .map(|m| format!("{:.0} Mbps", m))
+                            .unwrap_or_else(|| "—".into()),
+                        String::new(),
                     ),
-                ],
-                hardware: vec![
-                    ("GPU Name".into(), g.name.clone()),
-                    ("Driver".into(), g.driver.clone()),
-                ],
-            },
-            None => PerfStatsGroup {
-                activity: vec![("Status".into(), "No dedicated GPU".into(), String::new())],
-                hardware: vec![("GPU".into(), "Not found".into())],
-            },
+                    (
+                        "SSID".into(),
+                        w.ssid.clone().unwrap_or_else(|| "—".into()),
+                        String::new(),
+                    ),
+                    (
+                        "Adapter".into(),
+                        w.iface.clone(),
+                        String::new(),
+                    ),
+                    (
+                        "Channel".into(),
+                        w.channel
+                            .map(|c| c.to_string())
+                            .unwrap_or_else(|| "—".into()),
+                        String::new(),
+                    ),
+                    (
+                        "IPv4 address".into(),
+                        w.ipv4.clone().unwrap_or_else(|| "—".into()),
+                        String::new(),
+                    ),
+                ]
+            }
+            None => vec![
+                ("Status".into(), "Disconnected".into(), String::new()),
+                ("Adapter".into(), "Not found".into(), String::new()),
+                ("Send".into(), "—".into(), String::new()),
+                ("Receive".into(), "—".into(), String::new()),
+            ],
+        },
+        PerfItem::Gpu => match &sys.gpu {
+            Some(g) => vec![
+                ("Utilization".into(), fmt_pct(Some(g.util)), String::new()),
+                (
+                    "GPU clock".into(),
+                    g.freq_act
+                        .or(g.freq)
+                        .map(|f| format!("{} MHz", f))
+                        .unwrap_or_else(|| "—".into()),
+                    g.freq_max
+                        .map(|f| format!("max {} MHz", f))
+                        .unwrap_or_default(),
+                ),
+                (
+                    "Memory".into(),
+                    "Shared".into(),
+                    "integrated GPU uses system RAM".into(),
+                ),
+                ("Driver".into(), g.driver.clone(), g.name.clone()),
+            ],
+            None => vec![
+                ("GPU".into(), "Not found".into(), String::new()),
+                ("Utilization".into(), "—".into(), String::new()),
+                ("Clock".into(), "—".into(), String::new()),
+                ("Driver".into(), "—".into(), String::new()),
+            ],
         },
     }
 }
