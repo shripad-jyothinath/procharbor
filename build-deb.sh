@@ -14,8 +14,8 @@ BIN="$HERE/target/release/$PKG"
 
 cargo build --release --manifest-path "$HERE/Cargo.toml"
 
-rm -rf "$OUT"
 mkdir -p "$OUT"
+rm -f "$OUT"/*.deb "$OUT"/SHA256SUMS
 
 ROOT=$(mktemp -d)
 chmod 755 "$ROOT"

@@ -41,6 +41,32 @@ Python runtime overhead.
 
 ## Install
 
+### Via Python / PyPI
+
+Install the native executable as a Python package via `pip` or `pipx`:
+
+```sh
+# Using pipx (recommended for standalone CLI / GUI tools)
+pipx install procharbor
+
+# Or using pip
+pip install procharbor
+```
+
+Then run `procharbor` from your terminal or desktop menu.
+
+### Via Flatpak
+
+ProcHarbor can be built and run as a sandboxed Flatpak:
+
+```sh
+# Build Flatpak bundle locally
+./build-flatpak.sh
+
+# Install bundle
+flatpak install --user dist/procharbor.flatpak
+```
+
 ### Via APT Repository (Recommended)
 
 Install and receive automatic updates through `apt`:
@@ -128,7 +154,7 @@ Build requirements: Rust (`cargo`), `dpkg-deb`.
   "Shared" memory.
 - **Startup impact** cannot be measured on Linux; the tab shows user-added
   autostart entries with their enabled/disabled status.
-- **RAM speed / DIMM slots** need `dmidecode` as root and are shown as "—".
+- **RAM hardware specifications** (Memory Type e.g. LPDDR5/DDR4/DDR5, speed, manufacturer e.g. Micron/Kingston/Samsung, form factor, slots used, and hardware reserved memory) are detected without root privileges using the udev DMI database (`/run/udev/data/+dmi:id`) and EDAC (`/sys/devices/system/edac/mc/`), falling back to `dmidecode` if available.
 
 ## Performance
 

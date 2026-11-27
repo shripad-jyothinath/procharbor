@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=ProcHarbor
+GenericName=Task Manager
+Comment=Native Linux task manager and system monitor
+Exec=procharbor
+Icon=io.github.shripad_jyothinath.procharbor
+Terminal=false
+Categories=System;Monitor;
+Keywords=task;manager;process;cpu;memory;performance;monitor;
+StartupNotify=true
+StartupWMClass=io.github.shripad-jyothinath.procharbor

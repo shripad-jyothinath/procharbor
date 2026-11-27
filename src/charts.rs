@@ -54,8 +54,8 @@ pub fn draw_chart_area<F>(
 
     let pad_l = 4.0;
     let pad_r = 68.0;
-    let pad_t = 10.0;
-    let pad_b = 18.0;
+    let pad_t = 8.0;
+    let pad_b = 16.0;
 
     let pw = (rect.width() - pad_l - pad_r).max(10.0);
     let ph = (rect.height() - pad_t - pad_b).max(10.0);

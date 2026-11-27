@@ -582,28 +582,28 @@ impl ProcHarborApp {
         let pal = self.theme.palette();
         let frame = Frame::NONE
             .fill(pal.side)
-            .inner_margin(Margin::symmetric(10, 12))
+            .inner_margin(Margin::symmetric(8, 10))
             .stroke(Stroke::new(1.0, pal.border_soft));
 
         egui::Panel::left("sidebar")
             .resizable(false)
-            .exact_size(236.0)
+            .exact_size(170.0)
             .frame(frame)
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.add_space(4.0);
+                    ui.add_space(2.0);
                     if let Some(tex) = self.icons.logo(&ctx) {
-                        ui.image((tex.id(), Vec2::splat(24.0)));
+                        ui.image((tex.id(), Vec2::splat(22.0)));
                     }
                     ui.add_space(4.0);
                     ui.label(
                         RichText::new("ProcHarbor")
-                            .size(15.5)
+                            .size(15.0)
                             .strong()
                             .color(pal.text),
                     );
                 });
-                ui.add_space(10.0);
+                ui.add_space(8.0);
 
                 for tab in Tab::ALL {
                     let selected = self.current_tab == tab;
@@ -614,22 +614,22 @@ impl ProcHarborApp {
                     };
                     let resp = Frame::NONE
                         .fill(fill)
-                        .corner_radius(CornerRadius::same(6))
-                        .inner_margin(Margin::symmetric(10, 7))
+                        .corner_radius(CornerRadius::same(5))
+                        .inner_margin(Margin::symmetric(8, 6))
                         .show(ui, |ui| {
                             ui.set_width(ui.available_width());
                             ui.horizontal(|ui| {
                                 let dot_col = if selected { pal.accent } else { pal.dim };
                                 let (dot_r, _) = ui.allocate_exact_size(
-                                    Vec2::new(6.0, 14.0),
+                                    Vec2::new(4.0, 12.0),
                                     egui::Sense::hover(),
                                 );
                                 if selected {
                                     ui.painter()
-                                        .rect_filled(dot_r, CornerRadius::same(3), dot_col);
+                                        .rect_filled(dot_r, CornerRadius::same(2), dot_col);
                                 }
-                                ui.add_space(4.0);
-                                ui.label(RichText::new(tab.label()).size(13.5).color(pal.text));
+                                ui.add_space(3.0);
+                                ui.label(RichText::new(tab.label()).size(13.0).color(pal.text));
                             });
                         })
                         .response
@@ -638,7 +638,7 @@ impl ProcHarborApp {
                     if resp.hovered() && !selected {
                         ui.painter().rect_stroke(
                             resp.rect,
-                            CornerRadius::same(6),
+                            CornerRadius::same(5),
                             Stroke::new(1.0, pal.border_soft),
                             egui::StrokeKind::Inside,
                         );
@@ -659,11 +659,11 @@ impl ProcHarborApp {
                     };
 
                     ui.horizontal(|ui| {
-                        ui.add_space(6.0);
-                        ui.label(RichText::new("●").size(11.0).color(dot_col));
-                        ui.label(RichText::new(status_txt).size(12.0).color(pal.dim));
+                        ui.add_space(4.0);
+                        ui.label(RichText::new("●").size(10.0).color(dot_col));
+                        ui.label(RichText::new(status_txt).size(11.5).color(pal.dim));
                     });
-                    ui.add_space(4.0);
+                    ui.add_space(3.0);
 
                     let theme_label = match self.theme {
                         ThemeMode::Dark => "Light theme",
@@ -671,7 +671,7 @@ impl ProcHarborApp {
                     };
                     if ui
                         .add(
-                            egui::Button::new(RichText::new(theme_label).size(12.5).color(pal.dim))
+                            egui::Button::new(RichText::new(theme_label).size(12.0).color(pal.dim))
                                 .frame(false),
                         )
                         .clicked()
@@ -1922,15 +1922,15 @@ impl ProcHarborApp {
         // Left performance category selector panel
         egui::Panel::left("perf_nav")
             .resizable(false)
-            .exact_size(224.0)
+            .exact_size(160.0)
             .frame(
                 Frame::NONE
                     .fill(pal.bg)
-                    .inner_margin(Margin::symmetric(8, 8))
+                    .inner_margin(Margin::symmetric(6, 6))
                     .stroke(Stroke::new(1.0, pal.border_soft)),
             )
             .show(ui, |ui| {
-                ui.spacing_mut().item_spacing.y = 4.0;
+                ui.spacing_mut().item_spacing.y = 3.0;
                 for item in PerfItem::ALL {
                     let selected = self.perf_item == item;
                     let val_text = match item {
@@ -1958,7 +1958,7 @@ impl ProcHarborApp {
 
                     let row_w = ui.available_width();
                     let (rect, resp) =
-                        ui.allocate_exact_size(Vec2::new(row_w, 56.0), egui::Sense::click());
+                        ui.allocate_exact_size(Vec2::new(row_w, 44.0), egui::Sense::click());
 
                     let bg = if selected {
                         pal.accent_soft
@@ -1968,27 +1968,27 @@ impl ProcHarborApp {
                         Color32::TRANSPARENT
                     };
                     if bg != Color32::TRANSPARENT {
-                        ui.painter().rect_filled(rect, CornerRadius::same(6), bg);
+                        ui.painter().rect_filled(rect, CornerRadius::same(5), bg);
                     }
                     if selected {
                         let bar = egui::Rect::from_min_size(
-                            egui::Pos2::new(rect.left() + 2.0, rect.top() + 10.0),
-                            Vec2::new(3.0, rect.height() - 20.0),
+                            egui::Pos2::new(rect.left() + 2.0, rect.top() + 8.0),
+                            Vec2::new(3.0, rect.height() - 16.0),
                         );
                         ui.painter()
                             .rect_filled(bar, CornerRadius::same(2), item.color());
                     }
 
-                    let inner = rect.shrink2(Vec2::new(10.0, 6.0));
+                    let inner = rect.shrink2(Vec2::new(8.0, 4.0));
                     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(inner));
                     child.set_width(inner.width());
                     child.horizontal(|ui| {
-                        ui.label(RichText::new(item.label()).strong().color(pal.text));
+                        ui.label(RichText::new(item.label()).size(12.5).strong().color(pal.text));
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.label(RichText::new(val_text).color(pal.dim));
+                            ui.label(RichText::new(val_text).size(11.5).color(pal.dim));
                         });
                     });
-                    draw_sparkline(&mut child, spark_data, item.color(), 22.0);
+                    draw_sparkline(&mut child, spark_data, item.color(), 18.0);
 
                     if resp.clicked() {
                         self.perf_item = item;
@@ -2004,17 +2004,10 @@ impl ProcHarborApp {
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
                         Frame::NONE
-                            .inner_margin(Margin::symmetric(20, 14))
+                            .inner_margin(Margin::symmetric(14, 10))
                             .show(ui, |ui| {
                                 let avail_w = ui.available_width().max(240.0);
                                 ui.set_width(avail_w);
-
-                                ui.label(
-                                    RichText::new(self.perf_item.label())
-                                        .size(23.0)
-                                        .strong()
-                                        .color(pal.text),
-                                );
 
                                 let subtitle = match self.perf_item {
                                     PerfItem::Cpu => format!(
@@ -2067,17 +2060,25 @@ impl ProcHarborApp {
                                         .map(|g| g.name.clone())
                                         .unwrap_or_else(|| "No GPU".to_string()),
                                 };
-                                ui.add(
-                                    egui::Label::new(RichText::new(subtitle).color(pal.dim)).wrap(),
-                                );
-                                ui.add_space(10.0);
+
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.spacing_mut().item_spacing.x = 8.0;
+                                    ui.label(
+                                        RichText::new(self.perf_item.label())
+                                            .size(18.0)
+                                            .strong()
+                                            .color(pal.text),
+                                    );
+                                    ui.label(RichText::new(&subtitle).size(12.0).color(pal.dim));
+                                });
+                                ui.add_space(6.0);
 
                                 // Chart card
                                 Frame::NONE
                                     .fill(pal.panel)
                                     .stroke(Stroke::new(1.0, pal.border))
-                                    .corner_radius(CornerRadius::same(8))
-                                    .inner_margin(Margin::same(12))
+                                    .corner_radius(CornerRadius::same(6))
+                                    .inner_margin(Margin::symmetric(10, 8))
                                     .show(ui, |ui| {
                                         ui.set_width(ui.available_width());
                                         match self.perf_item {
@@ -2093,7 +2094,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     Some(100.0),
                                                     |v| format!("{:.0}%", v),
-                                                    215.0,
+                                                    140.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2113,7 +2114,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     Some(100.0),
                                                     |v| format!("{:.0}%", v),
-                                                    215.0,
+                                                    140.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2140,7 +2141,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     None,
                                                     |v| format!("{}/s", fmt_bytes(Some(v), 0)),
-                                                    215.0,
+                                                    140.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2167,7 +2168,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     None,
                                                     |v| format!("{}/s", fmt_bytes(Some(v), 0)),
-                                                    215.0,
+                                                    140.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2187,7 +2188,7 @@ impl ProcHarborApp {
                                                     &s,
                                                     Some(100.0),
                                                     |v| format!("{:.0}%", v),
-                                                    215.0,
+                                                    140.0,
                                                 );
                                                 draw_legend(
                                                     ui,
@@ -2198,72 +2199,153 @@ impl ProcHarborApp {
                                         }
                                     });
 
-                                ui.add_space(16.0);
-
-                                // Stats grid: explicit equal-width 4-column rows
-                                let stats =
-                                    build_perf_stats(sys, &self.snap.totals, self.perf_item);
-                                let gap = 16.0_f32;
-                                let col_w = ((avail_w - 3.0 * gap) / 4.0).max(100.0);
-                                for chunk in stats.chunks(4) {
-                                    ui.horizontal_top(|ui| {
-                                        ui.spacing_mut().item_spacing.x = gap;
-                                        for (lbl, val, sub) in chunk {
-                                            ui.allocate_ui_with_layout(
-                                                Vec2::new(col_w, 0.0),
-                                                Layout::top_down(Align::LEFT),
-                                                |ui| {
-                                                    ui.set_width(col_w);
-                                                    ui.label(
-                                                        RichText::new(lbl)
-                                                            .size(12.0)
+                                // Memory composition bar directly underneath the chart
+                                if self.perf_item == PerfItem::Memory {
+                                    let m = &sys.memory;
+                                    ui.add_space(6.0);
+                                    Frame::NONE
+                                        .fill(pal.panel)
+                                        .stroke(Stroke::new(1.0, pal.border))
+                                        .corner_radius(CornerRadius::same(6))
+                                        .inner_margin(Margin::symmetric(10, 6))
+                                        .show(ui, |ui| {
+                                            ui.set_width(ui.available_width());
+                                            let free_b = m
+                                                .total
+                                                .saturating_sub(m.used)
+                                                .saturating_sub(m.cached);
+                                            ui.horizontal(|ui| {
+                                                ui.label(
+                                                    RichText::new("Memory composition")
+                                                        .size(11.5)
+                                                        .strong()
+                                                        .color(pal.text),
+                                                );
+                                                ui.with_layout(
+                                                    Layout::right_to_left(Align::Center),
+                                                    |ui| {
+                                                        ui.label(
+                                                            RichText::new(format!(
+                                                                "Free {}",
+                                                                fmt_bytes(Some(free_b as f64), 1)
+                                                            ))
+                                                            .size(11.0)
                                                             .color(pal.dim),
-                                                    );
-                                                    ui.add(
-                                                        egui::Label::new(
-                                                            RichText::new(val)
-                                                                .size(18.0)
-                                                                .strong()
-                                                                .color(pal.text),
-                                                        )
-                                                        .wrap(),
-                                                    );
-                                                    if !sub.is_empty() {
-                                                        ui.add(
-                                                            egui::Label::new(
-                                                                RichText::new(sub)
-                                                                    .size(11.0)
-                                                                    .color(pal.faint),
-                                                            )
-                                                            .wrap(),
                                                         );
-                                                    }
-                                                },
+                                                        ui.label(
+                                                            RichText::new("·")
+                                                                .size(11.0)
+                                                                .color(pal.faint),
+                                                        );
+                                                        ui.label(
+                                                            RichText::new(format!(
+                                                                "Cached {}",
+                                                                fmt_bytes(
+                                                                    Some(m.cached as f64),
+                                                                    1
+                                                                )
+                                                            ))
+                                                            .size(11.0)
+                                                            .color(pal.purple),
+                                                        );
+                                                        ui.label(
+                                                            RichText::new("·")
+                                                                .size(11.0)
+                                                                .color(pal.faint),
+                                                        );
+                                                        ui.label(
+                                                            RichText::new(format!(
+                                                                "In use {}",
+                                                                fmt_bytes(Some(m.used as f64), 1)
+                                                            ))
+                                                            .size(11.0)
+                                                            .color(pal.accent),
+                                                        );
+                                                    },
+                                                );
+                                            });
+                                            ui.add_space(4.0);
+                                            draw_composition_bar(
+                                                ui,
+                                                &pal,
+                                                m.used as f64,
+                                                m.cached as f64,
+                                                free_b as f64,
                                             );
-                                        }
-                                    });
-                                    ui.add_space(10.0);
+                                        });
                                 }
 
-                                ui.add_space(6.0);
+                                ui.add_space(8.0);
+
+                                // High-density Windows Task Manager-style stats layout
+                                let stats =
+                                    build_perf_stats(sys, &self.snap.totals, self.perf_item);
+                                let is_wide = avail_w >= 520.0 && !stats.hardware.is_empty();
+
+                                if is_wide {
+                                    ui.horizontal_top(|ui| {
+                                        let left_w = (avail_w * 0.58).floor();
+                                        let right_w = (avail_w - left_w - 14.0).max(160.0);
+
+                                        ui.allocate_ui_with_layout(
+                                            Vec2::new(left_w, 0.0),
+                                            Layout::top_down(Align::LEFT),
+                                            |ui| {
+                                                ui.set_width(left_w);
+                                                render_activity_metrics(
+                                                    ui,
+                                                    &pal,
+                                                    &stats.activity,
+                                                    left_w,
+                                                );
+                                            },
+                                        );
+
+                                        ui.add_space(14.0);
+
+                                        ui.allocate_ui_with_layout(
+                                            Vec2::new(right_w, 0.0),
+                                            Layout::top_down(Align::LEFT),
+                                            |ui| {
+                                                ui.set_width(right_w);
+                                                render_hardware_specs(
+                                                    ui,
+                                                    &pal,
+                                                    &stats.hardware,
+                                                    right_w,
+                                                );
+                                            },
+                                        );
+                                    });
+                                } else {
+                                    render_activity_metrics(ui, &pal, &stats.activity, avail_w);
+                                    if !stats.hardware.is_empty() {
+                                        ui.add_space(6.0);
+                                        render_hardware_specs(ui, &pal, &stats.hardware, avail_w);
+                                    }
+                                }
+
+                                ui.add_space(4.0);
 
                                 // Extra details per perf item
                                 match self.perf_item {
                                     PerfItem::Cpu => {
+                                        ui.add_space(4.0);
                                         ui.label(
                                             RichText::new("Logical processors")
-                                                .size(13.0)
+                                                .size(12.0)
                                                 .strong()
                                                 .color(pal.text),
                                         );
-                                        ui.add_space(6.0);
-                                        let core_gap = 8.0_f32;
-                                        let cols =
-                                            ((avail_w + core_gap) / 138.0).floor().clamp(2.0, 6.0)
-                                                as usize;
+                                        ui.add_space(4.0);
+                                        let core_gap = 6.0_f32;
+                                        let cols = ((avail_w + core_gap) / 130.0)
+                                            .floor()
+                                            .clamp(2.0, 8.0)
+                                            as usize;
                                         let cell_w = ((avail_w - (cols as f32 - 1.0) * core_gap)
                                             / cols as f32)
-                                            .max(100.0);
+                                            .max(75.0);
                                         for (row_idx, chunk) in
                                             sys.cpu.per_core.chunks(cols).enumerate()
                                         {
@@ -2290,10 +2372,10 @@ impl ProcHarborApp {
                                                     Frame::NONE
                                                         .fill(pal.panel)
                                                         .stroke(Stroke::new(1.0, pal.border))
-                                                        .corner_radius(CornerRadius::same(6))
-                                                        .inner_margin(Margin::same(6))
+                                                        .corner_radius(CornerRadius::same(5))
+                                                        .inner_margin(Margin::symmetric(6, 4))
                                                         .show(ui, |ui| {
-                                                            let inner_w = (cell_w - 14.0).max(70.0);
+                                                            let inner_w = (cell_w - 12.0).max(60.0);
                                                             ui.set_width(inner_w);
                                                             ui.horizontal(|ui| {
                                                                 ui.label(
@@ -2301,7 +2383,7 @@ impl ProcHarborApp {
                                                                         "CPU {}",
                                                                         i
                                                                     ))
-                                                                    .size(11.0)
+                                                                    .size(10.5)
                                                                     .color(pal.dim),
                                                                 );
                                                                 ui.with_layout(
@@ -2311,14 +2393,14 @@ impl ProcHarborApp {
                                                                     |ui| {
                                                                         ui.label(
                                                                             RichText::new(val_str)
-                                                                                .size(11.0)
+                                                                                .size(10.5)
                                                                                 .color(pal.dim),
                                                                         );
                                                                     },
                                                                 );
                                                             });
                                                             draw_sparkline(
-                                                                ui, &core_hist, pal.accent, 22.0,
+                                                                ui, &core_hist, pal.accent, 18.0,
                                                             );
                                                         });
                                                 }
@@ -2327,62 +2409,27 @@ impl ProcHarborApp {
                                         }
                                     }
                                     PerfItem::Memory => {
-                                        let m = &sys.memory;
-                                        Frame::NONE
-                                            .fill(pal.panel)
-                                            .stroke(Stroke::new(1.0, pal.border))
-                                            .corner_radius(CornerRadius::same(8))
-                                            .inner_margin(Margin::same(12))
-                                            .show(ui, |ui| {
-                                                ui.set_width(ui.available_width());
-                                                ui.label(
-                                                    RichText::new("Composition")
-                                                        .size(13.0)
-                                                        .strong()
-                                                        .color(pal.text),
-                                                );
-                                                ui.add_space(6.0);
-                                                let free_b = m
-                                                    .total
-                                                    .saturating_sub(m.used)
-                                                    .saturating_sub(m.cached);
-                                                draw_composition_bar(
-                                                    ui,
-                                                    &pal,
-                                                    m.used as f64,
-                                                    m.cached as f64,
-                                                    free_b as f64,
-                                                );
-                                                ui.add_space(4.0);
-                                                draw_legend(
-                                                    ui,
-                                                    &pal,
-                                                    &[
-                                                        ("In use", pal.accent),
-                                                        ("Cached", pal.purple),
-                                                        ("Free", pal.border),
-                                                    ],
-                                                );
-                                            });
+                                        // Composition bar is cleanly rendered directly under chart
                                     }
                                     PerfItem::Disk if !sys.volumes.is_empty() => {
+                                        ui.add_space(4.0);
                                         Frame::NONE
                                             .fill(pal.panel)
                                             .stroke(Stroke::new(1.0, pal.border))
-                                            .corner_radius(CornerRadius::same(8))
-                                            .inner_margin(Margin::same(12))
+                                            .corner_radius(CornerRadius::same(6))
+                                            .inner_margin(Margin::symmetric(10, 8))
                                             .show(ui, |ui| {
                                                 ui.set_width(ui.available_width());
                                                 ui.label(
                                                     RichText::new("Volumes")
-                                                        .size(13.0)
+                                                        .size(12.0)
                                                         .strong()
                                                         .color(pal.text),
                                                 );
-                                                ui.add_space(6.0);
+                                                ui.add_space(4.0);
                                                 egui::Grid::new("volumes_grid")
                                                     .num_columns(7)
-                                                    .spacing([16.0, 6.0])
+                                                    .spacing([14.0, 5.0])
                                                     .show(ui, |ui| {
                                                         for (idx, h) in [
                                                             "Volume", "Mount", "Type", "Used",
@@ -2392,7 +2439,7 @@ impl ProcHarborApp {
                                                         .enumerate()
                                                         {
                                                             let lbl = RichText::new(*h)
-                                                                .size(12.0)
+                                                                .size(11.5)
                                                                 .color(pal.faint);
                                                             if (3..=5).contains(&idx) {
                                                                 ui.with_layout(
@@ -2410,13 +2457,13 @@ impl ProcHarborApp {
                                                         ui.end_row();
                                                         for v in &sys.volumes {
                                                             ui.label(
-                                                                RichText::new(&v.device).size(12.0),
+                                                                RichText::new(&v.device).size(11.5),
                                                             );
                                                             ui.label(
-                                                                RichText::new(&v.mount).size(12.0),
+                                                                RichText::new(&v.mount).size(11.5),
                                                             );
                                                             ui.label(
-                                                                RichText::new(&v.fstype).size(12.0),
+                                                                RichText::new(&v.fstype).size(11.5),
                                                             );
                                                             ui.with_layout(
                                                                 Layout::right_to_left(
@@ -2428,7 +2475,7 @@ impl ProcHarborApp {
                                                                             Some(v.used as f64),
                                                                             1,
                                                                         ))
-                                                                        .size(12.0),
+                                                                        .size(11.5),
                                                                     );
                                                                 },
                                                             );
@@ -2442,7 +2489,7 @@ impl ProcHarborApp {
                                                                             Some(v.free as f64),
                                                                             1,
                                                                         ))
-                                                                        .size(12.0),
+                                                                        .size(11.5),
                                                                     );
                                                                 },
                                                             );
@@ -2456,7 +2503,7 @@ impl ProcHarborApp {
                                                                             Some(v.total as f64),
                                                                             1,
                                                                         ))
-                                                                        .size(12.0),
+                                                                        .size(11.5),
                                                                     );
                                                                 },
                                                             );
@@ -2464,7 +2511,7 @@ impl ProcHarborApp {
                                                                 .clamp(0.0, 1.0)
                                                                 as f32;
                                                             draw_thin_bar(
-                                                                ui, &pal, frac, pal.accent, 110.0,
+                                                                ui, &pal, frac, pal.accent, 100.0,
                                                             );
                                                             ui.end_row();
                                                         }
@@ -2481,23 +2528,24 @@ impl ProcHarborApp {
                                         gpu_procs.sort_by(|a, b| b.gpu.total_cmp(&a.gpu));
                                         gpu_procs.truncate(6);
                                         if !gpu_procs.is_empty() {
+                                            ui.add_space(4.0);
                                             Frame::NONE
                                                 .fill(pal.panel)
                                                 .stroke(Stroke::new(1.0, pal.border))
-                                                .corner_radius(CornerRadius::same(8))
-                                                .inner_margin(Margin::same(12))
+                                                .corner_radius(CornerRadius::same(6))
+                                                .inner_margin(Margin::symmetric(10, 8))
                                                 .show(ui, |ui| {
                                                     ui.set_width(ui.available_width());
                                                     ui.label(
                                                         RichText::new("Processes using the GPU")
-                                                            .size(13.0)
+                                                            .size(12.0)
                                                             .strong()
                                                             .color(pal.text),
                                                     );
-                                                    ui.add_space(6.0);
+                                                    ui.add_space(4.0);
                                                     egui::Grid::new("gpu_procs_grid")
                                                         .num_columns(3)
-                                                        .spacing([14.0, 7.0])
+                                                        .spacing([14.0, 5.0])
                                                         .show(ui, |ui| {
                                                             for p in gpu_procs {
                                                                 let eng = p
@@ -2510,7 +2558,7 @@ impl ProcHarborApp {
                                                                         "{}  ({}{})",
                                                                         p.name, p.pid, eng
                                                                     ))
-                                                                    .size(12.0),
+                                                                    .size(11.5),
                                                                 );
                                                                 draw_thin_bar(
                                                                     ui,
@@ -2518,13 +2566,13 @@ impl ProcHarborApp {
                                                                     (p.gpu / 100.0).clamp(0.0, 1.0)
                                                                         as f32,
                                                                     PerfItem::Gpu.color(),
-                                                                    160.0,
+                                                                    140.0,
                                                                 );
                                                                 ui.label(
                                                                     RichText::new(fmt_pct(Some(
                                                                         p.gpu,
                                                                     )))
-                                                                    .size(12.0)
+                                                                    .size(11.5)
                                                                     .color(pal.dim),
                                                                 );
                                                                 ui.end_row();
@@ -2697,90 +2745,149 @@ fn service_startup(state: &str) -> &'static str {
 }
 
 fn draw_legend(ui: &mut egui::Ui, pal: &Palette, items: &[(&str, Color32)]) {
-    ui.add_space(4.0);
+    ui.add_space(3.0);
     ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 14.0;
+        ui.spacing_mut().item_spacing.x = 12.0;
         for (label, color) in items {
             ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 5.0;
-                ui.label(RichText::new("■").size(12.0).color(*color));
-                ui.label(RichText::new(*label).size(12.0).color(pal.dim));
+                ui.spacing_mut().item_spacing.x = 4.0;
+                ui.label(RichText::new("■").size(11.0).color(*color));
+                ui.label(RichText::new(*label).size(11.0).color(pal.dim));
             });
         }
     });
+}
+
+struct PerfStatsGroup {
+    activity: Vec<(String, String, String)>,
+    hardware: Vec<(String, String)>,
+}
+
+fn render_activity_metrics(
+    ui: &mut egui::Ui,
+    pal: &Palette,
+    metrics: &[(String, String, String)],
+    width: f32,
+) {
+    let cols = if width >= 380.0 { 3 } else { 2 };
+    let gap_x = 10.0_f32;
+    let col_w = ((width - (cols as f32 - 1.0) * gap_x) / cols as f32).max(65.0);
+
+    for chunk in metrics.chunks(cols) {
+        ui.horizontal_top(|ui| {
+            ui.spacing_mut().item_spacing.x = gap_x;
+            for (lbl, val, sub) in chunk {
+                ui.allocate_ui_with_layout(
+                    Vec2::new(col_w, 0.0),
+                    Layout::top_down(Align::LEFT),
+                    |ui| {
+                        ui.set_width(col_w);
+                        ui.label(RichText::new(lbl).size(11.0).color(pal.dim));
+                        ui.horizontal_wrapped(|ui| {
+                            ui.spacing_mut().item_spacing.x = 4.0;
+                            ui.label(RichText::new(val).size(14.0).strong().color(pal.text));
+                            if !sub.is_empty() {
+                                ui.label(RichText::new(sub).size(10.5).color(pal.faint));
+                            }
+                        });
+                    },
+                );
+            }
+        });
+        ui.add_space(4.0);
+    }
+}
+
+fn render_hardware_specs(
+    ui: &mut egui::Ui,
+    pal: &Palette,
+    specs: &[(String, String)],
+    width: f32,
+) {
+    let key_w = 112.0_f32.min(width * 0.45);
+    for (key, val) in specs {
+        if val.is_empty() {
+            continue;
+        }
+        ui.horizontal(|ui| {
+            ui.set_width(width);
+            ui.allocate_ui_with_layout(
+                Vec2::new(key_w, 17.0),
+                Layout::left_to_right(Align::Center),
+                |ui| {
+                    ui.label(RichText::new(key).size(11.5).color(pal.dim));
+                },
+            );
+            ui.add_space(4.0);
+            ui.label(RichText::new(val).size(11.5).strong().color(pal.text));
+        });
+        ui.add_space(2.0);
+    }
 }
 
 fn build_perf_stats(
     sys: &crate::sampler::SystemInfo,
     totals: &crate::sampler::Totals,
     item: PerfItem,
-) -> Vec<(String, String, String)> {
+) -> PerfStatsGroup {
     match item {
         PerfItem::Cpu => {
             let cpu = &sys.cpu;
             let max_cur = cpu.freqs.iter().copied().fold(0.0_f64, f64::max) / 1000.0;
             let turbo_str = if cpu.no_turbo == Some(1) { "off" } else { "on" };
-            vec![
-                (
-                    "Utilization".into(),
-                    fmt_pct(Some(cpu.util)),
-                    format!("load {:.2} · {:.2}", cpu.load[0], cpu.load[1]),
-                ),
-                (
-                    "Speed".into(),
-                    format!("{:.2} GHz", cpu.freq / 1000.0),
-                    format!("max core {:.2} GHz · turbo {}", max_cur, turbo_str),
-                ),
-                (
-                    "Processes".into(),
-                    totals.processes.to_string(),
-                    String::new(),
-                ),
-                ("Threads".into(), totals.threads.to_string(), String::new()),
-                ("Handles".into(), totals.handles.to_string(), String::new()),
-                ("Uptime".into(), fmt_uptime(sys.uptime), String::new()),
-                (
-                    "Base speed".into(),
-                    format!("{:.2} GHz", cpu.base_mhz / 1000.0),
-                    format!(
-                        "P-core hardware · E-core {:.2} GHz",
-                        cpu.base_e_mhz / 1000.0
+            PerfStatsGroup {
+                activity: vec![
+                    (
+                        "Utilization".into(),
+                        fmt_pct(Some(cpu.util)),
+                        format!("load {:.2} · {:.2}", cpu.load[0], cpu.load[1]),
                     ),
-                ),
-                (
-                    "Max speed".into(),
-                    format!("{:.2} GHz", cpu.max_policy_mhz / 1000.0),
-                    if cpu.no_turbo == Some(1) {
-                        "policy cap · turbo off".into()
-                    } else {
-                        "policy cap".into()
-                    },
-                ),
-                ("Cores".into(), cpu.cores.to_string(), String::new()),
-                (
-                    "Logical processors".into(),
-                    cpu.logical.to_string(),
-                    String::new(),
-                ),
-                ("Sockets".into(), cpu.sockets.to_string(), String::new()),
-                (
-                    "Virtualization".into(),
-                    if cpu.virtualization {
-                        "Enabled"
-                    } else {
-                        "Disabled"
-                    }
-                    .into(),
-                    String::new(),
-                ),
-                (
-                    "Temperature".into(),
-                    cpu.temp
-                        .map(|t| format!("{:.0} °C", t))
-                        .unwrap_or_else(|| "—".into()),
-                    "package".into(),
-                ),
-            ]
+                    (
+                        "Speed".into(),
+                        format!("{:.2} GHz", cpu.freq / 1000.0),
+                        format!("max core {:.2} GHz · turbo {}", max_cur, turbo_str),
+                    ),
+                    (
+                        "Processes".into(),
+                        totals.processes.to_string(),
+                        String::new(),
+                    ),
+                    ("Threads".into(), totals.threads.to_string(), String::new()),
+                    ("Handles".into(), totals.handles.to_string(), String::new()),
+                    ("Uptime".into(), fmt_uptime(sys.uptime), String::new()),
+                ],
+                hardware: vec![
+                    (
+                        "Base speed".into(),
+                        format!("{:.2} GHz", cpu.base_mhz / 1000.0),
+                    ),
+                    ("Sockets".into(), cpu.sockets.to_string()),
+                    ("Cores".into(), cpu.cores.to_string()),
+                    (
+                        "Logical processors".into(),
+                        cpu.logical.to_string(),
+                    ),
+                    (
+                        "Virtualization".into(),
+                        if cpu.virtualization {
+                            "Enabled"
+                        } else {
+                            "Disabled"
+                        }
+                        .into(),
+                    ),
+                    (
+                        "Max policy".into(),
+                        format!("{:.2} GHz", cpu.max_policy_mhz / 1000.0),
+                    ),
+                    (
+                        "Temperature".into(),
+                        cpu.temp
+                            .map(|t| format!("{:.0} °C", t))
+                            .unwrap_or_else(|| "—".into()),
+                    ),
+                ],
+            }
         }
         PerfItem::Memory => {
             let m = &sys.memory;
@@ -2812,66 +2919,54 @@ fn build_perf_stats(
                 fmt_bytes(Some(m.total as f64), 1)
             };
 
-            vec![
-                (
-                    "In use".into(),
-                    fmt_bytes(Some(m.used as f64), 1),
-                    format!("{:.1}%", used_pct),
-                ),
-                (
-                    "Available".into(),
-                    fmt_bytes(Some(m.available as f64), 1),
-                    String::new(),
-                ),
-                (
-                    "Committed".into(),
-                    fmt_bytes(Some(m.committed as f64), 1),
-                    format!("of {}", fmt_bytes(Some(m.commit_limit as f64), 1)),
-                ),
-                (
-                    "Cached".into(),
-                    fmt_bytes(Some(m.cached as f64), 1),
-                    String::new(),
-                ),
-                ("Speed".into(), speed_val, String::new()),
-                ("Slots used".into(), slots_val, String::new()),
-                ("Form factor".into(), form_val, String::new()),
-                ("Hardware reserved".into(), hw_res_val, String::new()),
-                ("Memory type".into(), type_val, String::new()),
-                ("Manufacturer".into(), mfr_val, String::new()),
-                (
-                    "Installed RAM".into(),
-                    installed_val,
-                    m.max_capacity
-                        .map(|c| format!("max {}", fmt_bytes(Some(c as f64), 0)))
-                        .unwrap_or_default(),
-                ),
-                (
-                    "Swap used".into(),
-                    fmt_bytes(Some(m.swap_used as f64), 1),
-                    format!("of {}", fmt_bytes(Some(m.swap_total as f64), 1)),
-                ),
-                (
-                    "Paged pool".into(),
-                    fmt_bytes(Some(m.slab as f64), 1),
-                    "Slab cache".into(),
-                ),
-                (
-                    "Non-paged pool".into(),
-                    fmt_bytes(Some(m.kernel as f64), 1),
-                    "kernel stack + page tables".into(),
-                ),
-                (
-                    "Dirty".into(),
-                    fmt_bytes(Some(m.dirty as f64), 1),
-                    String::new(),
-                ),
-                (
-                    "Writeback".into(),
-                    fmt_bytes(Some(m.writeback as f64), 1),
-                    String::new(),
-                ),
-            ]
+            PerfStatsGroup {
+                activity: vec![
+                    (
+                        "In use".into(),
+                        fmt_bytes(Some(m.used as f64), 1),
+                        format!("{:.1}%", used_pct),
+                    ),
+                    (
+                        "Available".into(),
+                        fmt_bytes(Some(m.available as f64), 1),
+                        String::new(),
+                    ),
+                    (
+                        "Committed".into(),
+                        fmt_bytes(Some(m.committed as f64), 1),
+                        format!("of {}", fmt_bytes(Some(m.commit_limit as f64), 1)),
+                    ),
+                    (
+                        "Cached".into(),
+                        fmt_bytes(Some(m.cached as f64), 1),
+                        String::new(),
+                    ),
+                    (
+                        "Swap used".into(),
+                        fmt_bytes(Some(m.swap_used as f64), 1),
+                        format!("of {}", fmt_bytes(Some(m.swap_total as f64), 1)),
+                    ),
+                    (
+                        "Paged pool".into(),
+                        fmt_bytes(Some(m.slab as f64), 1),
+                        "Slab cache".into(),
+                    ),
+                    (
+                        "Non-paged pool".into(),
+                        fmt_bytes(Some(m.kernel as f64), 1),
+                        "kernel stack + page tables".into(),
+                    ),
+                ],
+                hardware: vec![
+                    ("Speed".into(), speed_val),
+                    ("Slots used".into(), slots_val),
+                    ("Form factor".into(), form_val),
+                    ("Hardware reserved".into(), hw_res_val),
+                    ("Memory type".into(), type_val),
+                    ("Manufacturer".into(), mfr_val),
+                    ("Installed RAM".into(), installed_val),
+                ],
+            }
         }
         PerfItem::Disk => {
             let d = sys.disks.first();
@@ -2880,160 +2975,165 @@ fn build_perf_stats(
                 .iter()
                 .find(|v| v.mount == "/")
                 .or_else(|| sys.volumes.first());
-            vec![
-                (
-                    "Active time".into(),
-                    fmt_pct(d.map(|x| x.active)),
-                    String::new(),
-                ),
-                (
-                    "Average response".into(),
-                    format!("{:.1} ms", d.map(|x| x.response).unwrap_or(0.0)),
-                    String::new(),
-                ),
-                (
-                    "Read speed".into(),
-                    fmt_rate(d.map(|x| x.read)),
-                    String::new(),
-                ),
-                (
-                    "Write speed".into(),
-                    fmt_rate(d.map(|x| x.write)),
-                    String::new(),
-                ),
-                (
-                    "IOPS".into(),
-                    fmt_thousands(d.map(|x| x.iops.round() as u64).unwrap_or(0)),
-                    String::new(),
-                ),
-                (
-                    "Capacity used".into(),
-                    root_vol
-                        .map(|v| {
-                            format!(
-                                "{} / {}",
-                                fmt_bytes(Some(v.used as f64), 1),
-                                fmt_bytes(Some(v.total as f64), 1)
-                            )
-                        })
-                        .unwrap_or_else(|| "—".into()),
-                    root_vol
-                        .map(|v| format!("{:.0}%", v.percent))
-                        .unwrap_or_default(),
-                ),
-                (
-                    "Model".into(),
-                    d.map(|x| x.model.clone()).unwrap_or_else(|| "—".into()),
-                    String::new(),
-                ),
-                (
-                    "Temperature".into(),
-                    d.and_then(|x| x.temp)
-                        .map(|t| format!("{:.0} °C", t))
-                        .unwrap_or_else(|| "—".into()),
-                    "NVMe".into(),
-                ),
-            ]
+            PerfStatsGroup {
+                activity: vec![
+                    (
+                        "Active time".into(),
+                        fmt_pct(d.map(|x| x.active)),
+                        String::new(),
+                    ),
+                    (
+                        "Avg response".into(),
+                        format!("{:.1} ms", d.map(|x| x.response).unwrap_or(0.0)),
+                        String::new(),
+                    ),
+                    (
+                        "Read speed".into(),
+                        fmt_rate(d.map(|x| x.read)),
+                        String::new(),
+                    ),
+                    (
+                        "Write speed".into(),
+                        fmt_rate(d.map(|x| x.write)),
+                        String::new(),
+                    ),
+                    (
+                        "IOPS".into(),
+                        fmt_thousands(d.map(|x| x.iops.round() as u64).unwrap_or(0)),
+                        String::new(),
+                    ),
+                    (
+                        "Capacity used".into(),
+                        root_vol
+                            .map(|v| {
+                                format!(
+                                    "{} / {}",
+                                    fmt_bytes(Some(v.used as f64), 1),
+                                    fmt_bytes(Some(v.total as f64), 1)
+                                )
+                            })
+                            .unwrap_or_else(|| "—".into()),
+                        root_vol
+                            .map(|v| format!("{:.0}%", v.percent))
+                            .unwrap_or_default(),
+                    ),
+                ],
+                hardware: vec![
+                    (
+                        "Model".into(),
+                        d.map(|x| x.model.clone()).unwrap_or_else(|| "—".into()),
+                    ),
+                    (
+                        "Temperature".into(),
+                        d.and_then(|x| x.temp)
+                            .map(|t| format!("{:.0} °C", t))
+                            .unwrap_or_else(|| "—".into()),
+                    ),
+                ],
+            }
         }
         PerfItem::Wifi => match &sys.net.wifi {
-            Some(w) => vec![
-                (
-                    "SSID".into(),
-                    w.ssid.clone().unwrap_or_else(|| "—".into()),
-                    String::new(),
-                ),
-                (
-                    "Signal".into(),
-                    w.signal_dbm
-                        .map(|d| format!("{:.0} dBm", d))
-                        .unwrap_or_else(|| "—".into()),
-                    w.signal_pct
-                        .map(|p| format!("{:.0}%", p))
-                        .unwrap_or_default(),
-                ),
-                (
-                    "Link speed".into(),
-                    w.link_mbps
-                        .map(|m| format!("{:.0} Mbps", m))
-                        .unwrap_or_else(|| "—".into()),
-                    String::new(),
-                ),
-                (
-                    "Channel".into(),
-                    w.channel
-                        .map(|c| c.to_string())
-                        .unwrap_or_else(|| "—".into()),
-                    w.freq_ghz.map(|f| format!("{} GHz", f)).unwrap_or_default(),
-                ),
-                (
-                    "Adapter".into(),
-                    w.iface.clone(),
-                    w.driver.clone().unwrap_or_default(),
-                ),
-                (
-                    "IPv4".into(),
-                    w.ipv4.clone().unwrap_or_else(|| "—".into()),
-                    String::new(),
-                ),
-                (
-                    "MAC".into(),
-                    if w.mac.is_empty() {
-                        "—".into()
-                    } else {
-                        w.mac.clone()
-                    },
-                    String::new(),
-                ),
-                (
-                    "Transmit power".into(),
-                    w.txpower
-                        .map(|p| format!("{} dBm", p))
-                        .unwrap_or_else(|| "—".into()),
-                    String::new(),
-                ),
-                (
-                    "Power save".into(),
-                    w.powersave.clone().unwrap_or_else(|| "—".into()),
-                    String::new(),
-                ),
-                (
-                    "Radio temp".into(),
-                    w.temp
-                        .map(|t| format!("{:.0} °C", t))
-                        .unwrap_or_else(|| "—".into()),
-                    String::new(),
-                ),
-            ],
-            None => vec![("Adapter".into(), "Not found".into(), String::new())],
+            Some(w) => {
+                let wifi_iface = sys.net.interfaces.iter().find(|i| i.name == w.iface);
+                PerfStatsGroup {
+                    activity: vec![
+                        (
+                            "Send".into(),
+                            fmt_rate(wifi_iface.map(|i| i.tx)),
+                            String::new(),
+                        ),
+                        (
+                            "Receive".into(),
+                            fmt_rate(wifi_iface.map(|i| i.rx)),
+                            String::new(),
+                        ),
+                        (
+                            "Signal".into(),
+                            w.signal_dbm
+                                .map(|d| format!("{:.0} dBm", d))
+                                .unwrap_or_else(|| "—".into()),
+                            w.signal_pct
+                                .map(|p| format!("{:.0}%", p))
+                                .unwrap_or_default(),
+                        ),
+                        (
+                            "Link speed".into(),
+                            w.link_mbps
+                                .map(|m| format!("{:.0} Mbps", m))
+                                .unwrap_or_else(|| "—".into()),
+                            String::new(),
+                        ),
+                    ],
+                    hardware: vec![
+                        (
+                            "SSID".into(),
+                            w.ssid.clone().unwrap_or_else(|| "—".into()),
+                        ),
+                        (
+                            "Adapter".into(),
+                            w.iface.clone(),
+                        ),
+                        (
+                            "Channel".into(),
+                            w.channel
+                                .map(|c| c.to_string())
+                                .unwrap_or_else(|| "—".into()),
+                        ),
+                        (
+                            "IPv4".into(),
+                            w.ipv4.clone().unwrap_or_else(|| "—".into()),
+                        ),
+                        (
+                            "MAC".into(),
+                            if w.mac.is_empty() {
+                                "—".into()
+                            } else {
+                                w.mac.clone()
+                            },
+                        ),
+                        (
+                            "Transmit power".into(),
+                            w.txpower
+                                .map(|p| format!("{} dBm", p))
+                                .unwrap_or_else(|| "—".into()),
+                        ),
+                    ],
+                }
+            }
+            None => PerfStatsGroup {
+                activity: vec![("Status".into(), "Disconnected".into(), String::new())],
+                hardware: vec![("Adapter".into(), "Not found".into())],
+            },
         },
         PerfItem::Gpu => match &sys.gpu {
-            Some(g) => vec![
-                ("Utilization".into(), fmt_pct(Some(g.util)), String::new()),
-                (
-                    "GPU frequency".into(),
-                    g.freq
-                        .map(|f| format!("{} MHz", f))
-                        .unwrap_or_else(|| "—".into()),
-                    g.freq_max
-                        .map(|f| format!("max {} MHz", f))
-                        .unwrap_or_default(),
-                ),
-                (
-                    "Active frequency".into(),
-                    g.freq_act
-                        .map(|f| format!("{} MHz", f))
-                        .unwrap_or_else(|| "—".into()),
-                    "actual clock".into(),
-                ),
-                ("Driver".into(), g.driver.clone(), String::new()),
-                ("Name".into(), g.name.clone(), String::new()),
-                (
-                    "Memory".into(),
-                    "Shared".into(),
-                    "integrated GPU uses system memory".into(),
-                ),
-            ],
-            None => vec![("GPU".into(), "Not found".into(), String::new())],
+            Some(g) => PerfStatsGroup {
+                activity: vec![
+                    ("Utilization".into(), fmt_pct(Some(g.util)), String::new()),
+                    (
+                        "Clock frequency".into(),
+                        g.freq_act
+                            .or(g.freq)
+                            .map(|f| format!("{} MHz", f))
+                            .unwrap_or_else(|| "—".into()),
+                        g.freq_max
+                            .map(|f| format!("max {} MHz", f))
+                            .unwrap_or_default(),
+                    ),
+                    (
+                        "Memory".into(),
+                        "Shared".into(),
+                        "uses system RAM".into(),
+                    ),
+                ],
+                hardware: vec![
+                    ("GPU Name".into(), g.name.clone()),
+                    ("Driver".into(), g.driver.clone()),
+                ],
+            },
+            None => PerfStatsGroup {
+                activity: vec![("Status".into(), "No dedicated GPU".into(), String::new())],
+                hardware: vec![("GPU".into(), "Not found".into())],
+            },
         },
     }
 }

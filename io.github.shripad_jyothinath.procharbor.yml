@@ -1,0 +1,44 @@
+app-id: io.github.shripad_jyothinath.procharbor
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+
+command: procharbor
+
+finish-args:
+  # Display servers
+  - --socket=x11
+  - --socket=wayland
+  # Graphics acceleration
+  - --device=dri
+  # IPC & network monitoring
+  - --share=ipc
+  - --share=network
+  # System monitoring access (/proc, /sys, host fs)
+  - --filesystem=/proc:ro
+  - --filesystem=/sys:ro
+  - --filesystem=host:ro
+  # systemd D-Bus communication for service inspection
+  - --system-talk-name=org.freedesktop.systemd1
+  - --talk-name=org.freedesktop.systemd1
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/procharbor/cargo
+
+modules:
+  - name: procharbor
+    buildsystem: simple
+    build-commands:
+      - cargo build --release --verbose
+      - install -Dm755 target/release/procharbor /app/bin/procharbor
+      - install -Dm644 assets/io.github.shripad_jyothinath.procharbor.desktop /app/share/applications/io.github.shripad_jyothinath.procharbor.desktop
+      - install -Dm644 assets/io.github.shripad_jyothinath.procharbor.metainfo.xml /app/share/metainfo/io.github.shripad_jyothinath.procharbor.metainfo.xml
+      - install -Dm644 assets/logo.svg /app/share/icons/hicolor/scalable/apps/io.github.shripad_jyothinath.procharbor.svg
+      - /app/bin/procharbor --export-icons /app/share/icons/hicolor
+    sources:
+      - type: dir
+        path: .

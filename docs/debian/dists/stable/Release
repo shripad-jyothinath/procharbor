@@ -1,24 +1,24 @@
 Architectures: amd64
 Codename: stable
 Components: main
-Date: Thu, 26 Nov 2026 15:36:31 +0000
+Date: Fri, 27 Nov 2026 04:42:01 +0000
 Description: ProcHarbor Official APT Repository
 Label: ProcHarbor
 Origin: ProcHarbor
 Suite: stable
 MD5Sum:
- 6229b9f791967e632e86b41c626a24c2              192 Release
- 1d50a734ec4fd25bf7c40b75196b270e             1073 main/binary-amd64/Packages
- cc83b3cff8f392d0c932a78da85d6f0c              697 main/binary-amd64/Packages.gz
+ c4bd7f867db34dac0518c05dcdbdc112              192 Release
+ 217ddbbd5b91696ebef4617d5c38a5c9             1073 main/binary-amd64/Packages
+ e019b95fdc41375896bb833c112a26f8              695 main/binary-amd64/Packages.gz
 SHA1:
- 3494d9a0ff91273dd4b8dc5b30e5178cb7231abd              192 Release
- 3f67877b3492b5f1ccc681609f5e4c54c8a63d06             1073 main/binary-amd64/Packages
- 8821bbc85b4a402415c420280aa611d13dc8f831              697 main/binary-amd64/Packages.gz
+ 03450ec2e3db191bc3611b9042768222c93647a5              192 Release
+ c00ef4990f4ca24ba493dfd6c8219a1028f5d756             1073 main/binary-amd64/Packages
+ 12c543b6640e192ffae48892d9276407fc1bf217              695 main/binary-amd64/Packages.gz
 SHA256:
- 941f88f0c3172d956d0077138061a876983b27109b2bebb65143ec5578a9d177              192 Release
- a950959f6343576d43f8180f34c37f3973a47b0b78f44cf7f4d5fd66eb7a1197             1073 main/binary-amd64/Packages
- 9bfee12d5368ce20b038fb8c0b2d594967c95d6347bcf51e0df060c716ff4638              697 main/binary-amd64/Packages.gz
+ 48449e147549ca95c5818df945190d793d817598fc4785941d8ec6aafa51691d              192 Release
+ 16a876feb6c1a45a131b18b1c15f122805ef4b4f04b13af8b26672a85b5ed52d             1073 main/binary-amd64/Packages
+ fa5bf4be17d6affa9dabe015a5ca6701c4fc0812c93f39a5a21fbfb289b0db94              695 main/binary-amd64/Packages.gz
 SHA512:
- 8e0a090b3de49bc3d6701ee79903da4df968d23afd7f67b44af28912d02f5e1e3cfa96fd5232c7eb537088c204137e4e1a877c5be920e87756b462f48bd13ad8              192 Release
- 3c16f464f43484e1fea2f04d3133a515fe04ef6a9a2fffe26ed42a47051e1120282d9d7c6f9c4c791ee0072153d76a2906bb5f50c5b8fa8757a717b0ca22797a             1073 main/binary-amd64/Packages
- 56bfff0561e33bbdfeaa4841227bb7942faa0deee8e14730d0ed77ef45f10af15be29939e5a5a7f10a9d8b0dbe0078dbcda6ae42e23db2eeb7516898cb3fb50d              697 main/binary-amd64/Packages.gz
+ 35915626a8a2b9250158d284b5a97da72da1411df9a3a68dbe347ca5306e4a884a37f751caf4914c5ac44cc999230948feb6b222f6090f3df9fab8fe8a6533a6              192 Release
+ e29f2bffea08dbbaef4a1ad05392923ed18275a8d39d72502c8c484d8b331c6b8c536e61c0cfd7e2ab967c0f5f41089186f032eea29fbb86290a1222a0dce5ac             1073 main/binary-amd64/Packages
+ bef6cd9f36da511163413333a80fc39c3bbe28e875f450ed636afaa774111a67d0e275705072c8851484b58bc9cd9247bb7d7df4634de3454fa3c1276b31705d              695 main/binary-amd64/Packages.gz
